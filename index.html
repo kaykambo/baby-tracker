@@ -123,7 +123,7 @@ body.theme-mom .nav {
 /* SEC HDR */
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
 .st{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);font-weight:600}
-.sa{font-size:.78rem;color:var(--gold);cursor:pointer}
+.sa{font-size:.82rem;color:var(--gold);cursor:pointer;padding:5px 11px;border-radius:8px;background:var(--s2);border:1.5px solid var(--gold);}
 
 /* LOG */
 .ll{display:flex;flex-direction:column;gap:7px}
@@ -365,13 +365,10 @@ body.theme-mom .nav {
       </div>
     </div>
     <div class="sc-card">
-      <div class="sr"><div><div class="sr-l">Firebase Realtime Sync</div><div class="sr-s">Paste your Firebase config JSON to sync between phones</div></div></div>
-      <div style="padding:13px;border-bottom:1px solid var(--bdr)">
-        <textarea class="fta" id="fb-input" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","databaseURL":"..."}'></textarea>
-        <button class="btn-p" onclick="saveFirebaseConfig()" style="margin-top:7px">Save &amp; Connect</button>
-        <div id="fb-status" style="font-size:.73rem;color:var(--tx3);margin-top:7px;text-align:center"></div>
+      <div class="sr">
+        <div><div class="sr-l">Firebase Realtime Sync</div><div class="sr-s" id="fb-status">Connecting…</div></div>
+        <div id="sync-badge" style="font-size:.7rem;color:var(--green)">●</div>
       </div>
-      <div class="sr"><div class="sr-l">Sync Status</div><div id="sync-badge" style="font-size:.7rem;color:var(--green)">Local only</div></div>
     </div>
     <div style="text-align:center;padding:16px;color:var(--tx3);font-size:.7rem;line-height:1.7">
       Baby Boston • Made with love 🌙<br>All data belongs to your family
@@ -604,6 +601,20 @@ function unlock() {
   boot();
 }
 
+// ── Firebase config baked in — auto-connects on every device, no setup needed ──
+// NOTE: This config is intentionally embedded and visible in source — Firebase API keys
+// are designed to be public. Security comes from Firebase Database Rules (see deployment
+// guide). The rules lock writes to the /babyboston path only.
+const FB_CFG = {
+  apiKey:            "AIzaSyCOU92YRIHFdpNOEpv6LnRBJcYS_FMQr5A",
+  authDomain:        "baby-tracker-865b0.firebaseapp.com",
+  databaseURL:       "https://baby-tracker-865b0-default-rtdb.firebaseio.com",
+  projectId:         "baby-tracker-865b0",
+  storageBucket:     "baby-tracker-865b0.firebasestorage.app",
+  messagingSenderId: "114549808464",
+  appId:             "1:114549808464:web:457d0a917d813dc5ad6055"
+};
+
 function boot() {
   loadLocal();
   applySettings();
@@ -613,17 +624,8 @@ function boot() {
   window.addEventListener('online',  () => { online=true;  document.getElementById('offline-pill').classList.remove('show'); syncPending(); });
   window.addEventListener('offline', () => { online=false; document.getElementById('offline-pill').classList.add('show'); });
   if (!online) document.getElementById('offline-pill').classList.add('show');
-  const fc = localStorage.getItem(K.fb);
-  if (fc) {
-    try {
-      const cfg = JSON.parse(fc);
-      document.getElementById('fb-input').value = fc;
-      initFb(cfg);
-    } catch(e) {
-      localStorage.removeItem(K.fb); // remove corrupted config so it doesn't crash again
-      console.warn('Stored Firebase config was invalid, cleared.', e);
-    }
-  }
+  // Auto-connect using baked-in config — works on every device with no manual setup
+  initFb(FB_CFG);
   refreshDash(); renderLog(); renderMeds(); renderJournal();
 }
 
@@ -679,9 +681,7 @@ function applySettings() {
 // FIREBASE
 // ═══════════════════════════════════════════════════════
 function saveFirebaseConfig() {
-  const raw = document.getElementById('fb-input').value.trim();
-  try { const cfg=JSON.parse(raw); localStorage.setItem(K.fb,raw); initFb(cfg); toast('Firebase config saved!'); }
-  catch(e) { document.getElementById('fb-status').textContent = 'Invalid JSON — check your config.'; }
+  // Config is now baked into the app — this function is no longer used
 }
 
 // Track whether Firebase SDK scripts are already loaded
@@ -732,6 +732,24 @@ function initFb(cfg) {
   });
 }
 
+// Merge a medlog into the local medications array.
+// If the parent medication hasn't loaded yet (race on first connect),
+// retry once after a short delay rather than silently dropping the log.
+function mergeMedLog(log, isRetry) {
+  const med = medications.find(m => m.id === log.medId);
+  if (!med) {
+    if (!isRetry) setTimeout(() => mergeMedLog(log, true), 1500);
+    return; // will retry once; if still missing on retry, log is orphaned (med was deleted)
+  }
+  if (!med.logs) med.logs = [];
+  if (!med.logs.some(l => l.id === log.id)) {
+    const {medId:_, ...logEntry} = log;
+    med.logs.push(logEntry);
+    med.logs.sort((a,b) => a.timestamp - b.timestamp);
+    saveAll(); renderMeds();
+  }
+}
+
 function connectToDb(cfg, elS, elB) {
   try {
     firebase.initializeApp(cfg);
@@ -758,16 +776,7 @@ function connectToDb(cfg, elS, elB) {
       // Each medlog arrives here when written by either phone
       const log = snap.val();
       if (!log || !log.medId) return;
-      const med = medications.find(m => m.id === log.medId);
-      if (!med) return;
-      if (!med.logs) med.logs = [];
-      // Deduplicate by log id before pushing
-      if (!med.logs.some(l => l.id === log.id)) {
-        const {medId:_, ...logEntry} = log; // strip medId before storing in med.logs
-        med.logs.push(logEntry);
-        med.logs.sort((a,b) => a.timestamp - b.timestamp);
-        saveAll(); renderMeds();
-      }
+      mergeMedLog(log);
     });
     fbRef.child('journals').on('value', snap => {
       const v = snap.val();
@@ -1124,9 +1133,9 @@ function deleteMed(id){
     const med = medications.find(m=>m.id===id);
     medications=medications.filter(m=>m.id!==id); saveAll();
     fbRemove('medications',id);
-    // Also clean up any medlogs for this medication from Firebase
-    if (med && med.logs && fbRef && online) {
-      med.logs.forEach(l => { if(l.id) fbRef.child('medlogs').child(l.id).remove().catch(()=>{}); });
+    // Clean up associated medlogs — queue removes if offline so they sync later
+    if (med && med.logs) {
+      med.logs.forEach(l => { if(l.id) fbRemove('medlogs', l.id); });
     }
     renderMeds();
   });
@@ -1436,6 +1445,17 @@ function importJSON(input){
         entries.sort((a,b)=>b.timestamp-a.timestamp);
         journals.sort((a,b)=>b.timestamp-a.timestamp);
         saveAll();
+        // Push everything to Firebase so the cloud matches the restored backup.
+        // Without this, the next Firebase sync event would overwrite the restore
+        // with whatever was previously in the cloud.
+        if (fbRef) {
+          entries.forEach(e => fbPush('entries', e.id, e));
+          journals.forEach(j => fbPush('journals', j.id, j));
+          medications.forEach(m => {
+            fbPushMedMeta(m);
+            if (m.logs) m.logs.forEach(l => { if(l.id) fbPush('medlogs', l.id, {...l, medId: m.id}); });
+          });
+        }
         refreshDash(); renderLog(); renderMeds(); renderJournal();
         toast('✓ Backup restored — ' + entries.length + ' entries, ' + journals.length + ' journal entries');
       });
