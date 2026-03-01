@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Baby Boston">
+<title>Baby Boston</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #0a0a0f;
+  --s1:    #13131a;
+  --s2:    #1c1c27;
+  --s3:    #242433;
+  --bdr:   #2a2a3d;
+  --gold:  #c9a96e;
+  --blue:  #7c9ec9;
+  --green: #9ec99e;
+  --pink:  #c97c9e;
+  --red:   #c97c7c;
+  --tx:    #e8e8f0;
+  --tx2:   #9898b0;
+  --tx3:   #5a5a78;
+  --r:     16px;
+  --rsm:   10px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* USER THEMES */
+/* Dad: deep navy-blue tint throughout + strong blue border stripe */
+body.theme-dad {
+  --bg:  #060b12;
+  --s1:  #0d1520;
+  --s2:  #131e2e;
+  --s3:  #192638;
+  --bdr: #1e3050;
+  --tx3: #4d6278;
+}
+body.theme-dad #app { box-shadow: inset 0 0 160px rgba(20,60,130,.28); }
+body.theme-dad .hdr {
+  background: rgba(6,11,18,.97);
+  border-bottom: 3px solid #3a6aaa;
+}
+body.theme-dad .nav {
+  background: rgba(6,11,18,.98);
+  border-top: 3px solid #3a6aaa;
+}
+
+/* Mom: warm dark mode + strong pink border stripe */
+body.theme-mom {
+  --bg:  #110a0f;
+  --s1:  #1c1118;
+  --s2:  #251820;
+  --s3:  #2e1f28;
+  --bdr: #3d2233;
+}
+body.theme-mom #app { box-shadow: inset 0 0 160px rgba(180,60,120,.12); }
+body.theme-mom .hdr {
+  border-bottom: 3px solid #c97ca8;
+}
+body.theme-mom .nav {
+  border-top: 3px solid #c97ca8;
+}
+
+/* LOCK */
+#lock{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:26px;background-image:radial-gradient(ellipse at 20% 50%,#1a1a2e 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#0d1117 0%,transparent 50%)}
+.lock-title{font-family:'DM Serif Display',serif;font-size:2.8rem;color:var(--gold)}
+.lock-sub{color:var(--tx2);font-size:.9rem;letter-spacing:.05em}
+#lock-input{background:var(--s1);border:1.5px solid var(--bdr);border-radius:var(--r);padding:15px 22px;font-size:1.1rem;color:var(--tx);font-family:'DM Sans',sans-serif;width:260px;text-align:center;letter-spacing:.2em;outline:none;transition:border-color .2s}
+#lock-input:focus{border-color:var(--gold)}
+#lock-btn{background:var(--gold);color:#0a0a0f;border:none;border-radius:var(--r);padding:13px 38px;font-size:1rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .2s}
+#lock-btn:active{opacity:.8}
+#lock-err{color:var(--red);font-size:.82rem;min-height:18px;text-align:center}
+
+/* SHELL */
+#app{display:none;min-height:100vh;padding-bottom:72px}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr);padding:13px 16px;display:flex;align-items:center;justify-content:space-between}
+.hdr-title{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--gold)}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.offline-pill{background:var(--red);color:#fff;font-size:.62rem;padding:2px 7px;border-radius:20px;font-weight:700;letter-spacing:.04em;display:none}
+.offline-pill.show{display:block}
+.who-row{display:flex;background:var(--s2);border-radius:30px;padding:3px;gap:2px}
+.who-btn{padding:4px 12px;border-radius:25px;font-size:.76rem;font-weight:500;border:none;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;color:var(--tx2);background:transparent}
+.who-btn.on{background:var(--gold);color:#0a0a0f}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.97);backdrop-filter:blur(20px);border-top:1px solid var(--bdr);display:flex;padding:5px 0 max(5px,env(safe-area-inset-bottom))}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;cursor:pointer;border:none;background:none;color:var(--tx3);font-size:.58rem;font-family:'DM Sans',sans-serif;transition:color .2s}
+.nb.on{color:var(--gold)}
+.ni{font-size:1.3rem;line-height:1}
+
+/* PAGES */
+.page{display:none;padding:16px;max-width:600px;margin:0 auto}
+.page.on{display:block}
+
+/* SUMMARY */
+.summary{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;margin-bottom:16px;position:relative;overflow:hidden}
+.summary::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--blue),var(--green),var(--pink))}
+.sum-lbl{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);font-weight:600;margin-bottom:12px}
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.sum-item{text-align:center}
+.sum-val{font-size:1.2rem;font-weight:700;color:var(--tx);font-family:'DM Serif Display',serif}
+.sum-sub{font-size:.58rem;color:var(--tx3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+
+/* QUICK CARDS */
+.qg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.qc{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;cursor:pointer;transition:transform .15s;position:relative;overflow:hidden}
+.qc:active{transform:scale(.96)}
+.qc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.qc.feed::before{background:var(--gold)}.qc.diaper::before{background:var(--blue)}.qc.sleep::before{background:var(--green)}.qc.meltdown::before{background:var(--pink)}
+.qc-ico{font-size:1.4rem;margin-bottom:5px}
+.qc-lbl{font-size:.65rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em}
+.qc-el{font-size:.95rem;font-weight:600;margin:3px 0}
+.qc-who{font-size:.65rem;color:var(--tx3)}
+.qc-btn{margin-top:9px;background:var(--s2);border:1px solid var(--bdr);border-radius:7px;padding:5px 9px;font-size:.72rem;color:var(--gold);font-weight:500;text-align:center}
+
+/* SEC HDR */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.st{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);font-weight:600}
+.sa{font-size:.78rem;color:var(--gold);cursor:pointer}
+
+/* LOG */
+.ll{display:flex;flex-direction:column;gap:7px}
+.li{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--rsm);padding:11px 13px;display:flex;align-items:flex-start;gap:9px}
+.li-ico{font-size:1.15rem;flex-shrink:0;margin-top:1px}
+.li-body{flex:1;min-width:0}
+.li-title{font-size:.86rem;font-weight:500}
+.li-detail{font-size:.76rem;color:var(--tx2);margin-top:2px;line-height:1.4}
+.li-meta{font-size:.66rem;color:var(--tx3);margin-top:3px}
+.del-btn{font-size:.66rem;padding:3px 7px;border-radius:6px;border:1px solid var(--red);background:none;color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;margin-top:1px}
+
+/* OVERLAY / MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:500;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.overlay.on{display:flex}
+.modal{background:var(--s1);border:1px solid var(--bdr);border-radius:20px 20px 0 0;padding:20px 16px 26px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto}
+.modal.animate{animation:su .26s ease}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mh{width:34px;height:4px;background:var(--bdr);border-radius:2px;margin:0 auto 16px}
+.mt{font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:16px}
+
+/* FORM */
+.fg{margin-bottom:13px}
+.fl{font-size:.7rem;color:var(--tx2);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.06em}
+.fi,.fs,.fta{width:100%;background:var(--s2);border:1.5px solid var(--bdr);border-radius:var(--rsm);padding:10px 12px;color:var(--tx);font-size:.9rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--gold)}
+.fta{resize:none;min-height:74px}
+.fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235a5a78' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border-radius:20px;font-size:.8rem;border:1.5px solid var(--bdr);background:var(--s2);color:var(--tx2);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;user-select:none}
+.chip.on{background:var(--gold);color:#0a0a0f;border-color:var(--gold);font-weight:600}
+.mood-row{display:flex;gap:7px}
+.mb{flex:1;padding:10px 5px;border-radius:var(--rsm);border:1.5px solid var(--bdr);background:var(--s2);cursor:pointer;text-align:center;transition:all .15s;font-size:1.45rem;user-select:none}
+.mb.on{border-color:var(--gold);background:rgba(201,169,110,.12)}
+.mb-lbl{font-size:.58rem;color:var(--tx3);margin-top:3px;font-family:'DM Sans',sans-serif}
+.btn-p{width:100%;background:var(--gold);color:#0a0a0f;border:none;border-radius:var(--r);padding:14px;font-size:.94rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:9px;transition:opacity .2s}
+.btn-p:active{opacity:.8}
+.btn-c{width:100%;background:none;color:var(--tx2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:12px;font-size:.9rem;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:7px}
+
+/* TIMER */
+.tbox{background:var(--s2);border:1.5px solid var(--bdr);border-radius:var(--rsm);padding:13px;margin-bottom:13px}
+.thdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.thdr-l{font-size:.7rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em}
+.thdr-r{font-size:.64rem;color:var(--tx3);font-style:italic}
+.t-disp{font-size:2.1rem;font-family:'DM Serif Display',serif;color:var(--gold);text-align:center;letter-spacing:.04em}
+.t-side{font-size:.68rem;color:var(--tx3);text-align:center;min-height:17px;margin:4px 0 9px}
+.tbtns{display:flex;gap:6px}
+.tbtn{flex:1;padding:8px 5px;border-radius:var(--rsm);font-size:.78rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s}
+.tbtn.ts{background:var(--green);color:#0a0a0f}
+.tbtn.tw{background:var(--s3);color:var(--tx2);border:1.5px solid var(--bdr)}
+.tbtn.tp{background:var(--pink);color:#fff}
+.tbtn:disabled{opacity:.35;cursor:not-allowed}
+.t-foot{font-size:.65rem;color:var(--tx3);text-align:center;margin-top:5px;min-height:13px}
+
+/* TRENDS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.sc{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:13px}
+.sc-l{font-size:.63rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em}
+.sc-v{font-size:1.55rem;font-weight:600;color:var(--tx);margin:3px 0;font-family:'DM Serif Display',serif}
+.sc-s{font-size:.7rem;color:var(--tx2)}
+.cw{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;margin-bottom:12px}
+.cl{font-size:.7rem;color:var(--tx2);margin-bottom:9px;text-transform:uppercase;letter-spacing:.07em}
+
+/* MORE */
+.mi{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--rsm);padding:13px;margin-bottom:7px;display:flex;align-items:flex-start;justify-content:space-between;gap:9px}
+.mi-name{font-weight:500;font-size:.86rem}
+.mi-info{font-size:.73rem;color:var(--tx2);margin-top:2px}
+.mi-last{font-size:.66rem;color:var(--tx3);margin-top:2px}
+.mi-btns{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
+.sm{font-size:.66rem;padding:3px 8px;border-radius:6px;border:1.5px solid var(--bdr);background:none;color:var(--tx2);cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.sm.a{color:var(--gold);border-color:var(--gold)}.sm.d{color:var(--red);border-color:var(--red)}
+.export-btn{width:100%;background:var(--s2);border:1px solid var(--bdr);color:var(--tx);border-radius:var(--r);padding:12px;font-size:.88rem;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:10px}
+
+/* JOURNAL */
+.jc{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;margin-bottom:13px}
+.jc-l{font-size:.7rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+.je{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--rsm);padding:13px;margin-bottom:7px}
+.je-date{font-size:.66rem;color:var(--tx3);margin-bottom:5px}
+.je-text{font-size:.88rem;color:var(--tx);line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.je-foot{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+.je-by{font-size:.66rem;color:var(--tx3)}
+
+/* SETTINGS */
+.sc-card{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:13px}
+.sr{padding:13px 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);gap:9px}
+.sr:last-child{border-bottom:none}
+.sr-l{font-size:.86rem}
+.sr-s{font-size:.7rem;color:var(--tx3);margin-top:2px}
+.tz-pill{background:var(--s2);border:1px solid var(--bdr);border-radius:6px;padding:3px 8px;font-size:.66rem;color:var(--tx3)}
+
+/* MISC */
+.empty{text-align:center;padding:34px 18px;color:var(--tx3);font-size:.86rem;line-height:1.6}
+.empty-ico{font-size:2.3rem;margin-bottom:9px}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--s3);color:var(--tx);padding:8px 18px;border-radius:30px;font-size:.8rem;border:1px solid var(--bdr);z-index:900;opacity:0;transition:all .24s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.confirm-bar{position:fixed;bottom:140px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s3);color:var(--tx);padding:10px 14px;border-radius:14px;font-size:.8rem;border:1px solid var(--red);z-index:901;opacity:0;transition:all .24s;pointer-events:none;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.confirm-bar.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.confirm-yes{background:var(--red);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600}
+.confirm-no{background:none;color:var(--tx2);border:1px solid var(--bdr);border-radius:7px;padding:4px 10px;font-size:.78rem;font-family:'DM Sans',sans-serif;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lock">
+  <div style="font-size:2.8rem">🌙</div>
+  <div style="text-align:center">
+    <div class="lock-title">Baby Boston</div>
+    <div class="lock-sub" style="margin-top:5px">Enter passcode to continue</div>
+  </div>
+  <input id="lock-input" type="password" placeholder="passcode" autocomplete="off">
+  <div id="lock-err"></div>
+  <button id="lock-btn" onclick="unlock()">Enter</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="hdr">
+    <div class="hdr-title"><span id="hdr-icon">🌙</span> Boston</div>
+    <div class="hdr-r">
+      <div class="offline-pill" id="offline-pill">OFFLINE</div>
+      <div class="who-row">
+        <button class="who-btn on" id="btn-mom" aria-pressed="true"  onclick="setUser('Mom')">Mom</button>
+        <button class="who-btn"   id="btn-dad" aria-pressed="false" onclick="setUser('Dad')">Dad</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HOME -->
+  <div class="page on" id="page-home">
+    <div style="margin-bottom:18px">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:1.7rem">Good <span id="greeting">evening</span> 👋</h2>
+      <p id="clock" style="color:var(--tx2);font-size:.8rem;margin-top:3px"></p>
+    </div>
+    <div class="summary">
+      <div class="sum-lbl">Today at a Glance</div>
+      <div class="sum-grid">
+        <div class="sum-item"><div class="sum-val" id="s-feeds">0</div><div class="sum-sub">🍼 Feeds</div></div>
+        <div class="sum-item"><div class="sum-val" id="s-diapers">0</div><div class="sum-sub">🧷 Diapers</div></div>
+        <div class="sum-item"><div class="sum-val" id="s-sleep">0m</div><div class="sum-sub">😴 Sleep</div></div>
+        <div class="sum-item"><div class="sum-val" id="s-tummy">0m</div><div class="sum-sub">⏱️ Tummy</div></div>
+      </div>
+    </div>
+    <div class="qg">
+      <button class="qc feed" onclick="openModal('feed')" aria-label="Log a feed">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div class="qc-who" id="d-feed-who">—</div>   <div class="qc-btn">+ Log Feed</div></button>
+      <button class="qc diaper" onclick="openModal('diaper')" aria-label="Log a diaper change"> <div class="qc-ico">🧷</div><div class="qc-lbl">Last Diaper</div> <div class="qc-el" id="d-diaper-el">—</div> <div class="qc-who" id="d-diaper-who">—</div> <div class="qc-btn">+ Log Diaper</div></button>
+      <button class="qc sleep" onclick="openModal('sleep')" aria-label="Log sleep">  <div class="qc-ico">😴</div><div class="qc-lbl">Sleep</div>       <div class="qc-el" id="d-sleep-el">—</div>   <div class="qc-who" id="d-sleep-who">—</div>   <div class="qc-btn">+ Log Sleep</div></button>
+      <button class="qc meltdown" onclick="openModal('meltdown')" aria-label="Log a meltdown event"><div class="qc-ico">😭</div><div class="qc-lbl">Meltdown</div> <div class="qc-el" id="d-meltdown-el">—</div><div class="qc-who" id="d-meltdown-who">—</div><div class="qc-btn">+ Log Event</div></button>
+    </div>
+    <div class="sh"><div class="st">Recent Activity</div></div>
+    <div class="ll" id="recent-list"></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="page" id="page-log">
+    <div class="sh" style="margin-bottom:13px">
+      <div class="st">All Entries</div>
+      <select class="fs" id="log-filter" onchange="renderLog(true)" style="width:auto;padding:5px 27px 5px 9px;font-size:.76rem">
+        <option value="all">All</option>
+        <option value="feed">Feeds</option>
+        <option value="diaper">Diapers</option>
+        <option value="sleep">Sleep</option>
+        <option value="mood">Mood</option>
+        <option value="tummy">Tummy Time</option>
+        <option value="meltdown">Meltdowns</option>
+        <option value="weight">Weight</option>
+        <option value="appointment">Appointments</option>
+        <option value="medication">Medications</option>
+      </select>
+    </div>
+    <div class="ll" id="full-list"></div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div class="page" id="page-journal">
+    <div class="jc">
+      <label class="jc-l" for="journal-input">✍️ New Entry</label>
+      <textarea class="fta" id="journal-input" placeholder="Boston smiled today... She was so fussy until Dad sang to her... Things to tell the pediatrician..." style="min-height:96px"></textarea>
+      <button class="btn-p" onclick="submitJournal()">Save Entry</button>
+    </div>
+    <div class="sh"><div class="st">Journal</div></div>
+    <div id="journal-list"></div>
+  </div>
+
+  <!-- TRENDS -->
+  <div class="page" id="page-trends">
+    <div class="st" style="margin-bottom:13px">Last 7 Days</div>
+    <div class="sg" id="trend-stats"></div>
+    <div class="cw"><div class="cl">Daily Feeds</div><canvas id="c-feeds" height="128"></canvas></div>
+    <div class="cw"><div class="cl">Daily Diapers</div><canvas id="c-diapers" height="128"></canvas></div>
+    <div class="cw"><div class="cl">Daily Sleep (hours)</div><canvas id="c-sleep" height="128"></canvas></div>
+  </div>
+
+  <!-- MORE -->
+  <div class="page" id="page-more">
+    <div class="st" style="margin-bottom:13px">Track More</div>
+    <div class="qg" style="margin-bottom:18px">
+      <button class="qc" onclick="openModal('mood')" aria-label="Log mood"><div class="qc-ico">😊</div><div class="qc-lbl">Mood</div><div class="qc-btn">+ Log Mood</div></button>
+      <button class="qc" onclick="openModal('tummy')" aria-label="Log tummy time"><div class="qc-ico">⏱️</div><div class="qc-lbl">Tummy Time</div><div class="qc-btn">+ Log Session</div></button>
+      <button class="qc" onclick="openModal('weight')" aria-label="Log weight and growth"><div class="qc-ico">⚖️</div><div class="qc-lbl">Weight / Growth</div><div class="qc-btn">+ Log</div></button>
+      <button class="qc" onclick="openModal('appointment')" aria-label="Log an appointment"><div class="qc-ico">🩺</div><div class="qc-lbl">Appointment</div><div class="qc-btn">+ Log Visit</div></button>
+    </div>
+    <div class="sh">
+      <div class="st">Medications &amp; Vitamins</div>
+      <button class="sa" onclick="openModal('medication')" aria-label="Add medication">+ Add</button>
+    </div>
+    <div id="med-list"></div>
+    <div style="margin-top:18px">
+      <button class="export-btn" onclick="exportPDF()">📄 Export Full Log as PDF</button>
+      <button class="export-btn" onclick="exportJSON()" style="margin-top:8px">📦 Export JSON Backup</button>
+      <label class="export-btn" style="margin-top:8px;cursor:pointer">
+        📥 Import JSON Backup
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)">
+      </label>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="st" style="margin-bottom:13px">Settings</div>
+    <div class="sc-card">
+      <div class="sr">
+        <div><div class="sr-l">Default Feed Type</div><div class="sr-s">Shown first when logging</div></div>
+        <select class="fs" id="set-feedtype" style="width:148px;padding:6px 27px 6px 9px" onchange="saveSetting('feedType',this.value)">
+          <option value="breast">Breastfeeding</option>
+          <option value="bottle">Bottle</option>
+        </select>
+      </div>
+      <div class="sr">
+        <div><div class="sr-l">Time Zone</div><div class="sr-s" id="tz-name">Auto-detected</div></div>
+        <div class="tz-pill" id="tz-abbr">—</div>
+      </div>
+      <div class="sr" style="flex-direction:column;align-items:flex-start">
+        <div class="sr-l" style="margin-bottom:9px">Parent Names</div>
+        <div style="display:flex;gap:7px;width:100%">
+          <input class="fi" id="set-mom" placeholder="Mom's name" style="flex:1" oninput="saveSetting('nameMom',this.value);refreshWho()">
+          <input class="fi" id="set-dad" placeholder="Dad's name" style="flex:1" oninput="saveSetting('nameDad',this.value);refreshWho()">
+        </div>
+      </div>
+    </div>
+    <div class="sc-card">
+      <div class="sr"><div><div class="sr-l">Firebase Realtime Sync</div><div class="sr-s">Paste your Firebase config JSON to sync between phones</div></div></div>
+      <div style="padding:13px;border-bottom:1px solid var(--bdr)">
+        <textarea class="fta" id="fb-input" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","databaseURL":"..."}'></textarea>
+        <button class="btn-p" onclick="saveFirebaseConfig()" style="margin-top:7px">Save &amp; Connect</button>
+        <div id="fb-status" style="font-size:.73rem;color:var(--tx3);margin-top:7px;text-align:center"></div>
+      </div>
+      <div class="sr"><div class="sr-l">Sync Status</div><div id="sync-badge" style="font-size:.7rem;color:var(--green)">Local only</div></div>
+    </div>
+    <div style="text-align:center;padding:16px;color:var(--tx3);font-size:.7rem;line-height:1.7">
+      Baby Boston • Made with love 🌙<br>All data belongs to your family
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nb on" data-page="home"     onclick="navTo(this)"><div class="ni">🏠</div><span>Home</span></button>
+    <button class="nb"    data-page="log"      onclick="navTo(this)"><div class="ni">📋</div><span>Log</span></button>
+    <button class="nb"    data-page="journal"  onclick="navTo(this)"><div class="ni">✍️</div><span>Journal</span></button>
+    <button class="nb"    data-page="trends"   onclick="navTo(this)"><div class="ni">📈</div><span>Trends</span></button>
+    <button class="nb"    data-page="more"     onclick="navTo(this)"><div class="ni">✨</div><span>More</span></button>
+    <button class="nb"    data-page="settings" onclick="navTo(this)"><div class="ni">⚙️</div><span>Settings</span></button>
+  </nav>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="overlay" onclick="overlayBg(event)">
+
+  <!-- FEED -->
+  <div class="modal" id="m-feed" style="display:none">
+    <div class="mh"></div><div class="mt">🍼 Log Feed</div>
+    <div class="tbox">
+      <div class="thdr"><span class="thdr-l">Feed Timer</span><span class="thdr-r">optional — auto-resets after 2 hrs</span></div>
+      <div class="t-disp" id="t-disp">0:00</div>
+      <div class="t-side" id="t-side"></div>
+      <div class="tbtns">
+        <button class="tbtn ts" id="t-start"  onclick="tStart()">▶ Start</button>
+        <button class="tbtn tw" id="t-switch" onclick="tSwitch()" disabled>⇄ Switch</button>
+        <button class="tbtn tp" id="t-stop"   onclick="tStop()"   disabled>■ Stop</button>
+      </div>
+      <div class="t-foot" id="t-foot"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Feed Type</label>
+      <div class="chips" id="c-feedtype">
+        <button class="chip on" role="radio" aria-checked="true"  data-val="breast" onclick="cSingle(this,'c-feedtype');updateFeedFields()">Breastfeeding</button>
+        <button class="chip"    role="radio" aria-checked="false" data-val="bottle" onclick="cSingle(this,'c-feedtype');updateFeedFields()">Bottle</button>
+      </div>
+    </div>
+    <div id="breast-fields">
+      <div class="fg">
+        <label class="fl">Side(s)</label>
+        <div class="chips" id="c-side">
+          <button class="chip on" role="checkbox" aria-checked="true"  data-val="left"  onclick="cMulti(this)">Left</button>
+          <button class="chip"    role="checkbox" aria-checked="false" data-val="right" onclick="cMulti(this)">Right</button>
+        </div>
+      </div>
+      <div class="r2">
+        <div class="fg"><label class="fl" for="f-left">Left (min)</label><input class="fi" type="number" id="f-left" inputmode="numeric" placeholder="0" min="0"></div>
+        <div class="fg"><label class="fl" for="f-right">Right (min)</label><input class="fi" type="number" id="f-right" inputmode="numeric" placeholder="0" min="0"></div>
+      </div>
+    </div>
+    <div id="bottle-fields" style="display:none">
+      <div class="fg"><label class="fl" for="f-oz">Amount (oz)</label><input class="fi" type="number" id="f-oz" inputmode="decimal" placeholder="e.g. 3" min="0" step="0.5"></div>
+    </div>
+    <div class="fg"><label class="fl" for="f-time">Time</label><input class="fi" type="datetime-local" id="f-time"></div>
+    <button class="btn-p" onclick="submitFeed()">Save Feed</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- DIAPER -->
+  <div class="modal" id="m-diaper" style="display:none">
+    <div class="mh"></div><div class="mt">🧷 Log Diaper Change</div>
+    <div class="fg">
+      <label class="fl">Type</label>
+      <div class="chips" id="c-diaper">
+        <button class="chip on" role="checkbox" aria-checked="true"  data-val="wet"   onclick="cMulti(this)">Wet</button>
+        <button class="chip"    role="checkbox" aria-checked="false" data-val="dirty" onclick="cMulti(this)">Dirty</button>
+      </div>
+    </div>
+    <div class="fg"><label class="fl" for="d-time">Time</label><input class="fi" type="datetime-local" id="d-time"></div>
+    <div class="fg"><label class="fl" for="d-notes">Notes (optional)</label><textarea class="fta" id="d-notes" placeholder="Any observations..."></textarea></div>
+    <button class="btn-p" onclick="submitDiaper()">Save Diaper Change</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- SLEEP -->
+  <div class="modal" id="m-sleep" style="display:none">
+    <div class="mh"></div><div class="mt">😴 Log Sleep</div>
+    <div class="r2">
+      <div class="fg"><label class="fl" for="sl-start">Start</label><input class="fi" type="datetime-local" id="sl-start"></div>
+      <div class="fg"><label class="fl" for="sl-end">End</label><input class="fi"   type="datetime-local" id="sl-end"></div>
+    </div>
+    <button class="btn-p" onclick="submitSleep()">Save Sleep</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- MELTDOWN -->
+  <div class="modal" id="m-meltdown" style="display:none">
+    <div class="mh"></div><div class="mt">😭 Log Meltdown</div>
+    <div class="fg"><label class="fl" for="ml-time">Time</label><input class="fi" type="datetime-local" id="ml-time"></div>
+    <div class="fg"><label class="fl" for="ml-dur">Time to Calm (minutes)</label><input class="fi" type="number" id="ml-dur" inputmode="numeric" placeholder="e.g. 15" min="0"></div>
+    <div class="fg"><label class="fl" for="ml-notes">Notes (optional)</label><textarea class="fta" id="ml-notes" placeholder="What helped? What was going on?"></textarea></div>
+    <button class="btn-p" onclick="submitMeltdown()">Save Event</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- MOOD -->
+  <div class="modal" id="m-mood" style="display:none">
+    <div class="mh"></div><div class="mt">😊 Log Mood</div>
+    <div class="fg">
+      <label class="fl">How's Boston feeling?</label>
+      <div class="mood-row" id="mood-row">
+        <button class="mb on" data-val="happy"  onclick="pickMood(this)" aria-pressed="true">😄<div class="mb-lbl">Happy</div></button>
+        <button class="mb"    data-val="calm"   onclick="pickMood(this)" aria-pressed="false">😌<div class="mb-lbl">Calm</div></button>
+        <button class="mb"    data-val="fussy"  onclick="pickMood(this)" aria-pressed="false">😤<div class="mb-lbl">Fussy</div></button>
+        <button class="mb"    data-val="crying" onclick="pickMood(this)" aria-pressed="false">😢<div class="mb-lbl">Crying</div></button>
+      </div>
+    </div>
+    <div class="fg"><label class="fl" for="mo-time">Time</label><input class="fi" type="datetime-local" id="mo-time"></div>
+    <div class="fg"><label class="fl" for="mo-notes">Notes (optional)</label><textarea class="fta" id="mo-notes" placeholder="Any context..."></textarea></div>
+    <button class="btn-p" onclick="submitMood()">Save Mood</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- TUMMY -->
+  <div class="modal" id="m-tummy" style="display:none">
+    <div class="mh"></div><div class="mt">⏱️ Log Tummy Time</div>
+    <div class="fg"><label class="fl" for="tt-time">Time</label><input class="fi" type="datetime-local" id="tt-time"></div>
+    <div class="fg"><label class="fl" for="tt-dur">Duration (minutes)</label><input class="fi" type="number" id="tt-dur" inputmode="numeric" placeholder="e.g. 5" min="0"></div>
+    <button class="btn-p" onclick="submitTummy()">Save Session</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- WEIGHT -->
+  <div class="modal" id="m-weight" style="display:none">
+    <div class="mh"></div><div class="mt">⚖️ Weight &amp; Growth</div>
+    <div class="fg"><label class="fl" for="w-date">Date</label><input class="fi" type="date" id="w-date"></div>
+    <div class="r2">
+      <div class="fg"><label class="fl" for="w-lbs">Weight (lbs)</label><input class="fi" type="number" id="w-lbs" inputmode="decimal" placeholder="0" step="0.1" min="0"></div>
+      <div class="fg"><label class="fl" for="w-oz">Weight (oz)</label><input class="fi"  type="number" id="w-oz" inputmode="numeric" placeholder="0" min="0" max="15"></div>
+    </div>
+    <div class="r2">
+      <div class="fg"><label class="fl" for="w-len">Length (in)</label><input class="fi" type="number" id="w-len" inputmode="decimal" placeholder="0.0" step="0.1" min="0"></div>
+      <div class="fg"><label class="fl" for="w-head">Head Circ. (in)</label><input class="fi" type="number" id="w-head" inputmode="decimal" placeholder="0.0" step="0.1" min="0"></div>
+    </div>
+    <button class="btn-p" onclick="submitWeight()">Save Measurements</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- APPOINTMENT -->
+  <div class="modal" id="m-appointment" style="display:none">
+    <div class="mh"></div><div class="mt">🩺 Log Appointment</div>
+    <div class="fg"><label class="fl" for="ap-time">Date &amp; Time</label><input class="fi" type="datetime-local" id="ap-time"></div>
+    <div class="fg"><label class="fl" for="ap-type">Doctor / Type</label><input class="fi" type="text" id="ap-type" placeholder="e.g. Dr. Smith – 2 week checkup"></div>
+    <div class="fg"><label class="fl" for="ap-notes">Notes</label><textarea class="fta" id="ap-notes" placeholder="What was discussed, concerns..."></textarea></div>
+    <div class="fg"><label class="fl" for="ap-outcomes">Outcomes / Next Steps</label><textarea class="fta" id="ap-outcomes" placeholder="Follow-ups, prescriptions, advice..."></textarea></div>
+    <button class="btn-p" onclick="submitAppointment()">Save Appointment</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- MEDICATION SETUP -->
+  <div class="modal" id="m-medication" style="display:none">
+    <div class="mh"></div><div class="mt">💊 Add Medication / Vitamin</div>
+    <div class="fg"><label class="fl" for="med-name">Name</label><input class="fi" type="text" id="med-name" placeholder="e.g. Vitamin D drops"></div>
+    <div class="fg"><label class="fl" for="med-dose">Dose</label><input class="fi" type="text" id="med-dose" placeholder="e.g. 0.5 mL"></div>
+    <div class="fg">
+      <label class="fl" for="med-sched">Schedule</label>
+      <select class="fs" id="med-sched">
+        <option value="Once daily">Once daily</option>
+        <option value="Twice daily">Twice daily</option>
+        <option value="As needed">As needed</option>
+        <option value="Custom">Custom</option>
+      </select>
+    </div>
+    <button class="btn-p" onclick="submitMedication()">Save Medication</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- MED LOG -->
+  <div class="modal" id="m-med-log" style="display:none">
+    <div class="mh"></div>
+    <div class="mt" id="medlog-title">Log Dose</div>
+    <div class="fg"><label class="fl" for="ml2-time">Time Given</label><input class="fi" type="datetime-local" id="ml2-time"></div>
+    <div class="fg"><label class="fl" for="ml2-notes">Notes (optional)</label><textarea class="fta" id="ml2-notes" placeholder="Any reactions or observations..."></textarea></div>
+    <input type="hidden" id="ml2-id">
+    <button class="btn-p" onclick="submitMedLog()">Save Dose</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+</div><!-- /overlay -->
+
+<div class="confirm-bar" id="confirm-bar">
+  <span id="confirm-msg">Delete this entry?</span>
+  <button class="confirm-yes" id="confirm-yes">Delete</button>
+  <button class="confirm-no" onclick="hideConfirm()">Cancel</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const PASS = 'babyboston';
+const K = { e:'bb_e', m:'bb_m', s:'bb_s', p:'bb_p', fb:'bb_fb', j:'bb_j' };
+
+let S = { feedType:'breast', nameMom:'', nameDad:'', lastUser:'Mom' };
+let entries    = [];
+let journals   = [];
+let medications= [];
+let pending    = [];
+let who        = 'Mom';
+let activeModal= null;
+let fbRef      = null;
+let online     = navigator.onLine;
+
+// Timer state
+let tIv = null, tTo = null, tTs = null, tSide = null, tL = 0, tR = 0;
+const T_MAX = 7200000; // 2h
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+document.getElementById('lock-input').addEventListener('keydown', e => { if (e.key==='Enter') unlock(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && activeModal) closeModal(); });
+
+let booted = false;
+function unlock() {
+  if (document.getElementById('lock-input').value.trim().toLowerCase() !== PASS) {
+    document.getElementById('lock-err').textContent = 'Incorrect passcode. Try again.';
+    document.getElementById('lock-input').value = '';
+    return;
+  }
+  if (booted) return; // prevent double-boot from rapid clicks
+  booted = true;
+  document.getElementById('lock').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  applyTheme(who);
+  boot();
+}
+
+function boot() {
+  loadLocal();
+  applySettings();
+  detectTZ();
+  tick(); setInterval(tick, 30000);
+  setInterval(refreshDash, 10000);
+  window.addEventListener('online',  () => { online=true;  document.getElementById('offline-pill').classList.remove('show'); syncPending(); });
+  window.addEventListener('offline', () => { online=false; document.getElementById('offline-pill').classList.add('show'); });
+  if (!online) document.getElementById('offline-pill').classList.add('show');
+  const fc = localStorage.getItem(K.fb);
+  if (fc) {
+    try {
+      const cfg = JSON.parse(fc);
+      document.getElementById('fb-input').value = fc;
+      initFb(cfg);
+    } catch(e) {
+      localStorage.removeItem(K.fb); // remove corrupted config so it doesn't crash again
+      console.warn('Stored Firebase config was invalid, cleared.', e);
+    }
+  }
+  refreshDash(); renderLog(); renderMeds(); renderJournal();
+}
+
+// ═══════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════
+function loadLocal() {
+  try { const v=localStorage.getItem(K.e); if(v) entries=JSON.parse(v); } catch(e){}
+  try { const v=localStorage.getItem(K.m); if(v) medications=JSON.parse(v); } catch(e){}
+  try { const v=localStorage.getItem(K.s); if(v) S={...S,...JSON.parse(v)}; } catch(e){}
+  try { const v=localStorage.getItem(K.p); if(v) pending=JSON.parse(v); } catch(e){}
+  try { const v=localStorage.getItem(K.j); if(v) journals=JSON.parse(v); } catch(e){}
+}
+function saveAll() {
+  try {
+    localStorage.setItem(K.e, JSON.stringify(entries));
+    localStorage.setItem(K.m, JSON.stringify(medications));
+    localStorage.setItem(K.j, JSON.stringify(journals));
+  } catch(err) {
+    if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      // Prune oldest 10% of entries to make room, then retry once
+      // Firebase is the source of truth if connected, so local pruning is safe
+      const keep = Math.floor(entries.length * 0.9);
+      if (keep < entries.length) {
+        entries = entries.slice(0, keep); // entries are sorted newest-first
+        try {
+          localStorage.setItem(K.e, JSON.stringify(entries));
+          localStorage.setItem(K.m, JSON.stringify(medications));
+          localStorage.setItem(K.j, JSON.stringify(journals));
+          toast('⚠️ Local storage was full — oldest entries removed from local cache. Firebase copy is complete.');
+        } catch(e2) {
+          toast('⚠️ Storage full even after pruning — some data may not be saved locally');
+        }
+      } else {
+        toast('⚠️ Storage full — data not saved locally. Connect Firebase for cloud backup.');
+      }
+    }
+  }
+}
+function saveSetting(key, val) {
+  S[key]=val; localStorage.setItem(K.s, JSON.stringify(S));
+}
+function applySettings() {
+  document.getElementById('set-feedtype').value = S.feedType;
+  document.getElementById('set-mom').value = S.nameMom;
+  document.getElementById('set-dad').value = S.nameDad;
+  refreshWho();
+  // Restore last active user across sessions
+  if (S.lastUser && S.lastUser !== 'Mom') setUser(S.lastUser);
+}
+
+// ═══════════════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════════════
+function saveFirebaseConfig() {
+  const raw = document.getElementById('fb-input').value.trim();
+  try { const cfg=JSON.parse(raw); localStorage.setItem(K.fb,raw); initFb(cfg); toast('Firebase config saved!'); }
+  catch(e) { document.getElementById('fb-status').textContent = 'Invalid JSON — check your config.'; }
+}
+
+// Track whether Firebase SDK scripts are already loaded
+let fbSdkLoaded = false;
+
+function initFb(cfg) {
+  const elS = document.getElementById('fb-status');
+  const elB = document.getElementById('sync-badge');
+
+  // Detach any existing listeners atomically before doing anything async
+  if (fbRef) {
+    try { fbRef.child('entries').off(); fbRef.child('medications').off(); fbRef.child('medlogs').off(); fbRef.child('journals').off(); } catch(e){}
+    fbRef = null;
+  }
+
+  function doConnect() {
+    if (firebase.apps.length) {
+      // Delete existing app so new config (especially databaseURL) is fully applied
+      firebase.apps[0].delete()
+        .then(() => connectToDb(cfg, elS, elB))
+        .catch(() => {
+          // delete() failed — app may still be alive; connectToDb will surface any error
+          connectToDb(cfg, elS, elB);
+        });
+    } else {
+      connectToDb(cfg, elS, elB);
+    }
+  }
+
+  if (fbSdkLoaded) {
+    doConnect();
+    return;
+  }
+
+  function loadScript(src, cb) {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = cb;
+    s.onerror = () => { elS.textContent = 'Failed to load Firebase SDK. Check your connection.'; };
+    document.head.appendChild(s);
+  }
+
+  loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', () => {
+    loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js', () => {
+      fbSdkLoaded = true;
+      doConnect();
+    });
+  });
+}
+
+function connectToDb(cfg, elS, elB) {
+  try {
+    firebase.initializeApp(cfg);
+    fbRef = firebase.database().ref('babyboston');
+    fbRef.child('entries').on('value', snap => {
+      const v = snap.val();
+      entries = v ? Object.values(v).sort((a,b) => b.timestamp - a.timestamp) : [];
+      saveAll(); refreshDash(); renderLog();
+    });
+    fbRef.child('medications').on('value', snap => {
+      const v = snap.val();
+      // Firebase stores meds without logs (logs stored separately); restore local logs into each med
+      if (v) {
+        medications = Object.values(v).map(fbMed => {
+          const existing = medications.find(m => m.id === fbMed.id);
+          return {...fbMed, logs: existing ? (existing.logs||[]) : []};
+        });
+      } else {
+        medications = [];
+      }
+      saveAll(); renderMeds();
+    });
+    fbRef.child('medlogs').on('child_added', snap => {
+      // Each medlog arrives here when written by either phone
+      const log = snap.val();
+      if (!log || !log.medId) return;
+      const med = medications.find(m => m.id === log.medId);
+      if (!med) return;
+      if (!med.logs) med.logs = [];
+      // Deduplicate by log id before pushing
+      if (!med.logs.some(l => l.id === log.id)) {
+        const {medId:_, ...logEntry} = log; // strip medId before storing in med.logs
+        med.logs.push(logEntry);
+        med.logs.sort((a,b) => a.timestamp - b.timestamp);
+        saveAll(); renderMeds();
+      }
+    });
+    fbRef.child('journals').on('value', snap => {
+      const v = snap.val();
+      journals = v ? Object.values(v).sort((a,b) => b.timestamp - a.timestamp) : [];
+      saveAll(); renderJournal();
+    });
+    elB.textContent = '✓ Syncing'; elB.style.color = 'var(--green)';
+    elS.textContent = '✓ Connected to Firebase';
+    syncPending();
+  } catch(err) {
+    const msg = err.code === 'app/duplicate-app'
+      ? 'Already connected — refresh the page to switch Firebase projects.'
+      : 'Firebase error: ' + err.message;
+    elB.textContent = 'Error'; elS.textContent = msg;
+  }
+}
+
+// Push medication metadata without the logs array (logs stored separately to avoid race conditions)
+function fbPushMedMeta(med) {
+  const {logs:_, ...meta} = med; // strip logs before pushing
+  fbPush('medications', med.id, meta);
+}
+function fbPush(path, id, data) {
+  if (fbRef && online) fbRef.child(path).child(id).set(data).catch(()=>queue(path,id,data));
+  else queue(path,id,data);
+}
+function fbRemove(path, id) {
+  if (fbRef && online) {
+    fbRef.child(path).child(id).remove().catch(() => {
+      // Queue the remove so it retries when connection is restored
+      queue(path, id, null); // null signals a delete operation
+    });
+  } else {
+    queue(path, id, null);
+  }
+}
+function queue(path, id, data) {
+  // data===null means delete; anything else is a set
+  pending.push({path, id, data}); localStorage.setItem(K.p, JSON.stringify(pending));
+}
+function syncPending(){
+  if(!fbRef || !online || !pending.length) return;
+  const toSync = [...pending];
+  pending = [];
+  localStorage.setItem(K.p, '[]');
+  toSync.forEach(item => {
+    const op = item.data === null
+      ? fbRef.child(item.path).child(item.id).remove()
+      : fbRef.child(item.path).child(item.id).set(item.data);
+    op.catch(() => {
+      pending.push(item);
+      localStorage.setItem(K.p, JSON.stringify(pending));
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// NAV / USER
+// ═══════════════════════════════════════════════════════
+function navTo(btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  const pg = btn.dataset.page;
+  document.getElementById('page-'+pg).classList.add('on');
+  btn.classList.add('on');
+  if(pg==='trends') renderTrends();
+  if(pg==='more')   renderMeds();
+  if(pg==='log')    renderLog(true);
+  if(pg==='journal') renderJournal();
+}
+
+function setUser(u) {
+  who = u;
+  saveSetting('lastUser', u); // persist across sessions
+  document.getElementById('btn-mom').classList.toggle('on', u==='Mom');
+  document.getElementById('btn-dad').classList.toggle('on', u==='Dad');
+  document.getElementById('btn-mom').setAttribute('aria-pressed', u==='Mom');
+  document.getElementById('btn-dad').setAttribute('aria-pressed', u==='Dad');
+  applyTheme(u);
+}
+function applyTheme(u) {
+  document.body.classList.toggle('theme-dad', u==='Dad');
+  document.body.classList.toggle('theme-mom', u==='Mom');
+  // Swap header icon and browser tab title
+  const isMom = u === 'Mom';
+  const icon = isMom ? '☀️' : '🌙';
+  document.getElementById('hdr-icon').textContent = icon;
+  document.title = icon + ' Baby Boston';
+}
+function refreshWho() {
+  document.getElementById('btn-mom').textContent = S.nameMom||'Mom';
+  document.getElementById('btn-dad').textContent = S.nameDad||'Dad';
+}
+function nameOf(u) {
+  if (u === 'Mom') return S.nameMom || 'Mom';
+  if (u === 'Dad') return S.nameDad || 'Dad';
+  return u || '—'; // fallback for legacy entries with custom strings
+}
+
+// ═══════════════════════════════════════════════════════
+// CLOCK / TIME
+// ═══════════════════════════════════════════════════════
+function tick() {
+  const h=new Date().getHours();
+  document.getElementById('greeting').textContent = h<12?'morning':h<17?'afternoon':'evening';
+  document.getElementById('clock').textContent = new Date().toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+}
+function detectTZ() {
+  document.getElementById('tz-name').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.getElementById('tz-abbr').textContent = new Date().toLocaleTimeString('en-US',{timeZoneName:'short'}).split(' ').pop();
+}
+function elapsed(ts) {
+  if(!ts) return '—';
+  const m=Math.floor((Date.now()-ts)/60000);
+  if(m<1) return 'just now'; // covers future-dated entries too
+  if(m<60) return m+'m ago';
+  const h=Math.floor(m/60); if(h<24) return h+'h '+(m%60)+'m ago';
+  return Math.floor(h/24)+'d ago';
+}
+// Returns date string in LOCAL time — withTime=true gives "YYYY-MM-DDTHH:MM", false gives "YYYY-MM-DD"
+function dateLocal(withTime=true) {
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const base=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  return withTime ? `${base}T${p(d.getHours())}:${p(d.getMinutes())}` : base;
+}
+function nowLocal()   { return dateLocal(true);  }
+function todayLocal() { return dateLocal(false); }
+// Parse datetime-local value to ms timestamp
+function parseLocal(id) {
+  const v=document.getElementById(id).value; return v?new Date(v).getTime():Date.now();
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function refreshDash() {
+  const start=new Date(); start.setHours(0,0,0,0);
+  const tm=start.getTime();
+  const te=entries.filter(e=>e.timestamp>=tm);
+  // Summary
+  const feeds=te.filter(e=>e.type==='feed').length;
+  const diapers=te.filter(e=>e.type==='diaper').length;
+  const sleepM=te.filter(e=>e.type==='sleep').reduce((a,e)=>a+(e.durationMin||0),0);
+  const tummyM=te.filter(e=>e.type==='tummy').reduce((a,e)=>a+(e.durationMin||0),0);
+  document.getElementById('s-feeds').textContent=feeds;
+  document.getElementById('s-diapers').textContent=diapers;
+  const sh=Math.floor(sleepM/60), sm=sleepM%60;
+  document.getElementById('s-sleep').textContent=sh>0?sh+'h'+(sm?sm+'m':''):sleepM+'m';
+  document.getElementById('s-tummy').textContent=tummyM+'m';
+  // Cards (entries are sorted desc, so .find gives most recent)
+  ['feed','diaper','sleep','meltdown'].forEach(t=>{
+    const last=entries.find(e=>e.type===t);
+    document.getElementById('d-'+t+'-el').textContent=last?elapsed(last.timestamp):'—';
+    document.getElementById('d-'+t+'-who').textContent=last?nameOf(last.by):'No entries yet';
+  });
+  // Recent
+  const el=document.getElementById('recent-list');
+  const r=entries.slice(0,5);
+  el.innerHTML=r.length?r.map(entryHTML).join(''):'<div class="empty"><div class="empty-ico">🌙</div>No entries yet.<br>Log Boston\'s first event!</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════════════════════
+function openModal(type) {
+  if(activeModal) closeModal();
+  activeModal=type;
+  document.getElementById('overlay').classList.add('on');
+  const el = document.getElementById('m-'+type);
+  el.style.display='block';
+  // Force animation replay
+  el.classList.remove('animate');
+  void el.offsetWidth; // reflow
+  el.classList.add('animate');
+  prepModal(type);
+}
+function prepModal(type) {
+  const now=nowLocal();
+  if(type==='feed'){
+    document.getElementById('f-time').value=now;
+    cSingleByVal('c-feedtype', S.feedType||'breast');
+    updateFeedFields();
+    // Reset side chips to Left only
+    document.querySelectorAll('#c-side .chip').forEach(c=>{const on=c.dataset.val==='left';c.classList.toggle('on',on);c.setAttribute('aria-checked',on?'true':'false');});
+    document.getElementById('f-left').value=''; document.getElementById('f-right').value=''; document.getElementById('f-oz').value='';
+    tReset();
+  }
+  if(type==='diaper'){
+    document.getElementById('d-time').value=now;
+    document.getElementById('d-notes').value='';
+    document.querySelectorAll('#c-diaper .chip').forEach(c=>{const on=c.dataset.val==='wet';c.classList.toggle('on',on);c.setAttribute('aria-checked',on?'true':'false');});
+  }
+  if(type==='sleep'){
+    document.getElementById('sl-start').value=now;
+    // Default end to 1 hour after start — prevents accidental 0-minute saves
+    const endD=new Date(); endD.setHours(endD.getHours()+1);
+    const _p=n=>String(n).padStart(2,'0');
+    document.getElementById('sl-end').value=`${endD.getFullYear()}-${_p(endD.getMonth()+1)}-${_p(endD.getDate())}T${_p(endD.getHours())}:${_p(endD.getMinutes())}`;
+  }
+  if(type==='meltdown'){document.getElementById('ml-time').value=now;document.getElementById('ml-dur').value='';document.getElementById('ml-notes').value='';}
+  if(type==='mood'){document.getElementById('mo-time').value=now;document.getElementById('mo-notes').value='';document.querySelectorAll('#mood-row .mb').forEach((b,i)=>{b.classList.toggle('on',i===0);b.setAttribute('aria-pressed',i===0?'true':'false');});}
+  if(type==='tummy'){document.getElementById('tt-time').value=now;document.getElementById('tt-dur').value='';}
+  if(type==='weight'){document.getElementById('w-date').value=todayLocal();['w-lbs','w-oz','w-len','w-head'].forEach(id=>document.getElementById(id).value='');}
+  if(type==='appointment'){document.getElementById('ap-time').value=now;['ap-type','ap-notes','ap-outcomes'].forEach(id=>document.getElementById(id).value='');}
+  if(type==='medication'){
+    ['med-name','med-dose'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('med-sched').value='Once daily';
+  }
+  if(type==='med-log'){document.getElementById('ml2-time').value=now;document.getElementById('ml2-notes').value='';}
+}
+function closeModal() {
+  if(activeModal==='feed') tReset();
+  document.getElementById('overlay').classList.remove('on');
+  document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
+  activeModal=null;
+}
+function overlayBg(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+// ═══════════════════════════════════════════════════════
+// CHIP HELPERS (scoped by container ID, prevents cross-contamination)
+// ═══════════════════════════════════════════════════════
+function cSingle(el, cid) {
+  document.querySelectorAll('#'+cid+' .chip').forEach(c=>{c.classList.remove('on');c.setAttribute('aria-checked','false');});
+  el.classList.add('on'); el.setAttribute('aria-checked','true');
+}
+function cSingleByVal(cid, val) {
+  document.querySelectorAll('#'+cid+' .chip').forEach(c=>{const on=c.dataset.val===val;c.classList.toggle('on',on);c.setAttribute('aria-checked',on?'true':'false');});
+}
+function cMulti(el){ el.classList.toggle('on'); el.setAttribute('aria-checked', el.classList.contains('on') ? 'true' : 'false'); }
+function chipVals(cid){ return [...document.querySelectorAll('#'+cid+' .chip.on')].map(c=>c.dataset.val); }
+function chipVal(cid){ const el=document.querySelector('#'+cid+' .chip.on'); return el?el.dataset.val:null; }
+
+function pickMood(el){document.querySelectorAll('#mood-row .mb').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false');});el.classList.add('on');el.setAttribute('aria-pressed','true');}
+function updateFeedFields(){const t=chipVal('c-feedtype');document.getElementById('breast-fields').style.display=t==='breast'?'block':'none';document.getElementById('bottle-fields').style.display=t==='bottle'?'block':'none';}
+
+// ═══════════════════════════════════════════════════════
+// ENTRY FACTORY
+// ═══════════════════════════════════════════════════════
+function uid(){ return Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function addEntry(type, data, opts={}) {
+  const ts = data.timestamp || Date.now();
+  const entry = { id:uid(), type, by:who, ...data, timestamp:ts };
+  entries.unshift(entry);
+  // Re-sort so backdated entries land in the correct chronological position
+  entries.sort((a, b) => b.timestamp - a.timestamp);
+  saveAll();
+  fbPush('entries', entry.id, entry);
+  refreshDash(); renderLog();
+  if (!opts.silent) { closeModal(); toast('Logged ✓'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// SUBMIT HANDLERS
+// ═══════════════════════════════════════════════════════
+function submitFeed(){
+  const ft=chipVal('c-feedtype')||'breast';
+  const ts=parseLocal('f-time');
+  if(ft==='breast'){
+    const ld=Math.max(0,parseInt(document.getElementById('f-left').value)||0);
+    const rd=Math.max(0,parseInt(document.getElementById('f-right').value)||0);
+    addEntry('feed',{feedType:'breast',sides:chipVals('c-side'),leftDuration:ld,rightDuration:rd,timestamp:ts});
+  } else {
+    addEntry('feed',{feedType:'bottle',bottleAmount:Math.max(0,parseFloat(document.getElementById('f-oz').value)||0),timestamp:ts});
+  }
+}
+function submitDiaper(){
+  addEntry('diaper',{diaperTypes:chipVals('c-diaper'),notes:document.getElementById('d-notes').value.trim(),timestamp:parseLocal('d-time')});
+}
+function submitSleep(){
+  const s=parseLocal('sl-start'), e=parseLocal('sl-end');
+  if(e<=s){toast('⚠️ End time must be after start time');return;}
+  addEntry('sleep',{sleepStart:s,sleepEnd:e,durationMin:Math.round((e-s)/60000),timestamp:s});
+}
+function submitMeltdown(){
+  addEntry('meltdown',{durationMin:Math.max(0,parseInt(document.getElementById('ml-dur').value)||0),notes:document.getElementById('ml-notes').value.trim(),timestamp:parseLocal('ml-time')});
+}
+function submitMood(){
+  const el=document.querySelector('#mood-row .mb.on');
+  addEntry('mood',{mood:el?el.dataset.val:'calm',notes:document.getElementById('mo-notes').value.trim(),timestamp:parseLocal('mo-time')});
+}
+function submitTummy(){
+  const dur=Math.max(0,parseInt(document.getElementById('tt-dur').value)||0);
+  if(dur===0){toast('⚠️ Enter a duration greater than 0');return;}
+  addEntry('tummy',{durationMin:dur,timestamp:parseLocal('tt-time')});
+}
+function submitWeight(){
+  const lbs=parseFloat(document.getElementById('w-lbs').value)||0;
+  const oz=parseInt(document.getElementById('w-oz').value)||0;
+  if(lbs===0&&oz===0){toast('⚠️ Enter at least a weight (lbs or oz)');return;}
+  const dv=document.getElementById('w-date').value;
+  addEntry('weight',{lbs,oz,length:parseFloat(document.getElementById('w-len').value)||0,head:parseFloat(document.getElementById('w-head').value)||0,timestamp:dv?new Date(dv+'T12:00:00').getTime():Date.now()});
+}
+function submitAppointment(){
+  const apptType=document.getElementById('ap-type').value.trim();
+  const notes=document.getElementById('ap-notes').value.trim();
+  if(!apptType&&!notes){toast('⚠️ Add a doctor/type or notes');return;}
+  addEntry('appointment',{apptType,notes,outcomes:document.getElementById('ap-outcomes').value.trim(),timestamp:parseLocal('ap-time')});
+}
+function submitMedication(){
+  const name=document.getElementById('med-name').value.trim();
+  if(!name){toast('Enter a medication name');return;}
+  const med={id:uid(),name,dose:document.getElementById('med-dose').value.trim(),schedule:document.getElementById('med-sched').value,logs:[]};
+  medications.push(med); saveAll();
+  fbPushMedMeta(med); // push without empty logs array
+  renderMeds(); closeModal(); toast('Medication saved');
+}
+function openMedLog(medId){
+  const med=medications.find(m=>m.id===medId); if(!med) return;
+  document.getElementById('medlog-title').textContent='💊 Log '+med.name;
+  document.getElementById('ml2-id').value=medId;
+  openModal('med-log');
+}
+function submitMedLog(){
+  const medId=document.getElementById('ml2-id').value;
+  const med=medications.find(m=>m.id===medId); if(!med) return;
+  const ts=parseLocal('ml2-time');
+  const logId=uid();
+  const log={id:logId,timestamp:ts,by:who,notes:document.getElementById('ml2-notes').value.trim()};
+  if(!med.logs) med.logs=[];
+  med.logs.push(log); saveAll();
+  // Push the log as its own Firebase child so concurrent writes from both phones
+  // never overwrite each other (race condition fix — was: fbPush('medications',med.id,med))
+  fbPush('medlogs', logId, {...log, medId});
+  // Also update the medication object itself (without logs array) to keep name/dose/schedule in sync
+  fbPushMedMeta(med);
+  renderMeds();
+  // Add to activity log silently (don't close modal twice or double-toast)
+  addEntry('medication',{medName:med.name,dose:med.dose,notes:log.notes,timestamp:ts},{silent:true});
+  closeModal();
+  toast('Dose logged ✓');
+}
+// ═══════════════════════════════════════════════════════
+// INLINE CONFIRM (replaces blocking confirm() dialog)
+// ═══════════════════════════════════════════════════════
+let confirmCb = null;
+let confirmTo = null;
+function showConfirm(msg, cb) {
+  confirmCb = cb;
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-yes').onclick = () => { hideConfirm(); cb(); };
+  const bar = document.getElementById('confirm-bar');
+  bar.classList.add('show');
+  clearTimeout(confirmTo);
+  confirmTo = setTimeout(hideConfirm, 5000); // auto-dismiss after 5s
+}
+function hideConfirm() {
+  document.getElementById('confirm-bar').classList.remove('show');
+  confirmCb = null; clearTimeout(confirmTo);
+}
+
+function deleteMed(id){
+  showConfirm('Remove this medication?', () => {
+    const med = medications.find(m=>m.id===id);
+    medications=medications.filter(m=>m.id!==id); saveAll();
+    fbRemove('medications',id);
+    // Also clean up any medlogs for this medication from Firebase
+    if (med && med.logs && fbRef && online) {
+      med.logs.forEach(l => { if(l.id) fbRef.child('medlogs').child(l.id).remove().catch(()=>{}); });
+    }
+    renderMeds();
+  });
+}
+function deleteEntry(id){
+  showConfirm('Delete this entry?', () => {
+    entries=entries.filter(e=>e.id!==id); saveAll();
+    fbRemove('entries',id); refreshDash(); renderLog(); toast('Entry deleted');
+  });
+}
+function deleteJournal(id){
+  showConfirm('Delete this journal entry?', () => {
+    journals=journals.filter(j=>j.id!==id); saveAll();
+    fbRemove('journals',id); renderJournal();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// FEED TIMER
+// ═══════════════════════════════════════════════════════
+function tStart(){
+  tSide=chipVals('c-side').includes('left')?'left':'right';
+  tTs=Date.now();
+  document.getElementById('t-start').disabled=true;
+  document.getElementById('t-stop').disabled=false;
+  document.getElementById('t-switch').disabled=false;
+  document.getElementById('t-side').textContent='🤱 '+cap(tSide)+' side';
+  document.getElementById('t-foot').textContent='Auto-resets after 2 hrs if not stopped';
+  tIv=setInterval(()=>{
+    const tot=tL+tR+(Date.now()-tTs);
+    document.getElementById('t-disp').textContent=fmtMs(tot);
+  },500);
+  tTo=setTimeout(()=>{tReset();toast('Feed timer auto-reset after 2 hours');},T_MAX);
+}
+function tSwitch(){
+  const now=Date.now(); const dur=now-tTs;
+  if(tSide==='left') tL+=dur; else tR+=dur;
+  tTs=now; tSide=tSide==='left'?'right':'left';
+  document.getElementById('t-side').textContent='🤱 '+cap(tSide)+' side';
+  toast('Switched to '+tSide+' side');
+}
+function tStop(){
+  if(!tTs) return;
+  const dur=Date.now()-tTs;
+  if(tSide==='left') tL+=dur; else tR+=dur;
+  clearInterval(tIv); clearTimeout(tTo); tIv=null; tTo=null; tTs=null;
+  const lm=Math.round(tL/60000), rm=Math.round(tR/60000);
+  if(lm>0){document.getElementById('f-left').value=lm; const lc=document.querySelector('#c-side .chip[data-val="left"]');lc.classList.add('on');lc.setAttribute('aria-checked','true');}
+  if(rm>0){document.getElementById('f-right').value=rm; const rc=document.querySelector('#c-side .chip[data-val="right"]');rc.classList.add('on');rc.setAttribute('aria-checked','true');}
+  document.getElementById('t-disp').textContent=fmtMs(tL+tR);
+  document.getElementById('t-side').textContent='✓ Durations filled in below';
+  document.getElementById('t-start').disabled=false;
+  document.getElementById('t-stop').disabled=true;
+  document.getElementById('t-switch').disabled=true;
+  document.getElementById('t-foot').textContent='';
+}
+function tReset(){
+  clearInterval(tIv); clearTimeout(tTo); tIv=null; tTo=null; tTs=null; tSide=null; tL=0; tR=0;
+  const d=document.getElementById('t-disp');
+  if(d){d.textContent='0:00';document.getElementById('t-side').textContent='';document.getElementById('t-foot').textContent='';document.getElementById('t-start').disabled=false;document.getElementById('t-stop').disabled=true;document.getElementById('t-switch').disabled=true;}
+}
+function fmtMs(ms){const s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+// ═══════════════════════════════════════════════════════
+// JOURNAL
+// ═══════════════════════════════════════════════════════
+function submitJournal(){
+  const text=document.getElementById('journal-input').value.trim();
+  if(!text){toast('Write something first!');return;}
+  const j={id:uid(),text,by:who,timestamp:Date.now()};
+  journals.unshift(j); saveAll();
+  fbPush('journals',j.id,j);
+  document.getElementById('journal-input').value='';
+  renderJournal(); toast('Journal entry saved 📝');
+}
+function renderJournal(){
+  const el=document.getElementById('journal-list'); if(!el) return;
+  if(!journals.length){el.innerHTML='<div class="empty"><div class="empty-ico">📖</div>Your journal is empty.<br>Write your first memory!</div>';return;}
+  el.innerHTML=journals.map(j=>`<div class="je"><div class="je-date">${fmtDate(j.timestamp,'long')}</div><div class="je-text">${esc(j.text)}</div><div class="je-foot"><span class="je-by">— ${esc(nameOf(j.by))}</span><button class="del-btn" aria-label="Delete journal entry" onclick="deleteJournal('${j.id}')">✕</button></div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// ENTRY HTML
+// ═══════════════════════════════════════════════════════
+const ICO={feed:'🍼',diaper:'🧷',sleep:'😴',mood:'😊',tummy:'⏱️',meltdown:'😭',weight:'⚖️',appointment:'🩺',medication:'💊'};
+const MOODS={happy:'😄',calm:'😌',fussy:'😤',crying:'😢'};
+
+function entryHTML(e){
+  let title='', detail='';
+  switch(e.type){
+    case 'feed': {
+      if(e.feedType==='breast'){
+        title='Breastfed';
+        const parts=[];
+        if((e.sides||[]).includes('left')&&e.leftDuration)   parts.push('L '+e.leftDuration+'min');
+        if((e.sides||[]).includes('right')&&e.rightDuration) parts.push('R '+e.rightDuration+'min');
+        detail=parts.join(' · ')||'Duration not recorded';
+      } else {title='Bottle Feed';detail=e.bottleAmount?e.bottleAmount+' oz':'';}
+      break;
+    }
+    case 'diaper': title='Diaper Change'; detail=(e.diaperTypes||[]).join(' + ')+(e.notes?' — '+e.notes:''); break;
+    case 'sleep':  title='Sleep'; detail=fmtDur(e.durationMin||0); break;
+    case 'mood':   title='Mood: '+(MOODS[e.mood]||'')+' '+cap(e.mood||''); detail=e.notes||''; break;
+    case 'tummy':  title='Tummy Time'; detail=(e.durationMin||0)+' min'; break;
+    case 'meltdown': title='Meltdown'; detail='Calmed in '+(e.durationMin||'?')+'min'+(e.notes?' — '+e.notes:''); break;
+    case 'weight': title='Weight & Growth'; detail=e.lbs+'lbs '+e.oz+'oz'+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
+    case 'appointment': title=e.apptType||'Appointment'; detail=(e.notes||'')+(e.outcomes?' | '+e.outcomes:''); break;
+    case 'medication': title=e.medName||'Medication'; detail=(e.dose||'')+(e.notes?' — '+e.notes:''); break;
+    default: title=e.type;
+  }
+  return `<div class="li"><div class="li-ico">${ICO[e.type]||'📝'}</div><div class="li-body"><div class="li-title">${esc(title)}</div>${detail?`<div class="li-detail">${esc(detail)}</div>`:''}<div class="li-meta">${fmtDate(e.timestamp,'short')} · ${esc(nameOf(e.by))}</div></div><button class="del-btn" aria-label="Delete ${esc(e.type)} entry" onclick="deleteEntry('${e.id}')">✕</button></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// LOG PAGE
+// ═══════════════════════════════════════════════════════
+const LOG_PAGE = 100;
+let logPage = 1;
+function renderLog(reset){
+  const el=document.getElementById('full-list'); if(!el) return;
+  if(reset) logPage=1;
+  const f=document.getElementById('log-filter').value;
+  const list=entries.filter(e=>f==='all'||e.type===f);
+  const paged=list.slice(0,logPage*LOG_PAGE);
+  const hasMore=paged.length<list.length;
+  el.innerHTML=(paged.length?paged.map(entryHTML).join(''):'<div class="empty"><div class="empty-ico">📋</div>No entries yet</div>')
+    +(hasMore?`<button class="btn-c" style="margin-top:10px" onclick="logPage++;renderLog()">Load more (${list.length-paged.length} remaining)</button>`:'');
+}
+
+// ═══════════════════════════════════════════════════════
+// MEDS PAGE
+// ═══════════════════════════════════════════════════════
+function renderMeds(){
+  const el=document.getElementById('med-list'); if(!el) return;
+  if(!medications.length){el.innerHTML='<div class="empty"><div class="empty-ico">💊</div>No medications added yet</div>';return;}
+  el.innerHTML=medications.map(m=>{
+    const last=m.logs&&m.logs.length?m.logs[m.logs.length-1]:null;
+    return `<div class="mi"><div style="flex:1;min-width:0"><div class="mi-name">${esc(m.name)}</div><div class="mi-info">${esc(m.dose)} · ${m.schedule}</div><div class="mi-last">${last?'Last: '+fmtDate(last.timestamp,'short')+' by '+esc(nameOf(last.by)):'Not yet given'}</div></div><div class="mi-btns"><button class="sm a" aria-label="Log dose for ${esc(m.name)}" onclick="openMedLog('${m.id}')">+ Log Dose</button><button class="sm d" aria-label="Remove ${esc(m.name)}" onclick="deleteMed('${m.id}')">Remove</button></div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// TRENDS
+// ═══════════════════════════════════════════════════════
+function renderTrends(){
+  // Build day buckets for last 7 days in a single pass
+  const buckets = [];
+  for(let i=6; i>=0; i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    buckets.push({
+      label: d.toLocaleDateString('en-US',{weekday:'short'}),
+      start: new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),
+      feeds:0, diapers:0, sleepMin:0, tummy:0
+    });
+  }
+  const cutoff = buckets[0].start; // 7 days ago start
+  let totalFeeds=0, totalDiapers=0, totalSleepMin=0, totalTummy=0;
+
+  entries.forEach(e => {
+    if(e.timestamp < cutoff) return; // older than 7d — skip
+    const bucket = buckets.find(b => e.timestamp >= b.start && e.timestamp < b.start+86400000);
+    if(!bucket) return;
+    if(e.type==='feed')   { bucket.feeds++;   totalFeeds++; }
+    if(e.type==='diaper') { bucket.diapers++; totalDiapers++; }
+    if(e.type==='sleep')  { bucket.sleepMin += (e.durationMin||0); totalSleepMin += (e.durationMin||0); }
+    if(e.type==='tummy')  { bucket.tummy    += (e.durationMin||0); totalTummy    += (e.durationMin||0); }
+  });
+
+  const avgSleepMin = Math.round(totalSleepMin/7);
+  document.getElementById('trend-stats').innerHTML=`
+    <div class="sc"><div class="sc-l">Feeds (7d)</div><div class="sc-v">${totalFeeds}</div><div class="sc-s">${(totalFeeds/7).toFixed(1)}/day avg</div></div>
+    <div class="sc"><div class="sc-l">Diapers (7d)</div><div class="sc-v">${totalDiapers}</div><div class="sc-s">${(totalDiapers/7).toFixed(1)}/day avg</div></div>
+    <div class="sc"><div class="sc-l">Avg Sleep/day</div><div class="sc-v">${Math.floor(avgSleepMin/60)}h</div><div class="sc-s">${avgSleepMin%60}m</div></div>
+    <div class="sc"><div class="sc-l">Tummy (7d)</div><div class="sc-v">${totalTummy}</div><div class="sc-s">minutes total</div></div>`;
+
+  const labels    = buckets.map(b=>b.label);
+  const feedData  = buckets.map(b=>b.feeds);
+  const diaperData= buckets.map(b=>b.diapers);
+  const sleepData = buckets.map(b=>Math.round(b.sleepMin/60*10)/10);
+
+  requestAnimationFrame(()=>{
+    drawBar('c-feeds',   labels, feedData,   '#c9a96e');
+    drawBar('c-diapers', labels, diaperData, '#7c9ec9');
+    drawBar('c-sleep',   labels, sleepData,  '#9ec99e');
+  });
+}
+
+function drawBar(id,labels,data,color){
+  const cv=document.getElementById(id); if(!cv) return;
+  const W=cv.offsetWidth||320, H=128;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  // Polyfill roundRect for older Safari/iOS
+  const rr=(x,y,w,h,r)=>{
+    if(typeof ctx.roundRect==='function'){ctx.roundRect(x,y,w,h,r);}
+    else{ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
+  };
+  const max=Math.max(...data,1);
+  const p={t:10,b:26,l:18,r:6};
+  const bw=(W-p.l-p.r)/labels.length;
+  ctx.clearRect(0,0,W,H);
+  // Hoist constant state outside loop
+  ctx.font='9.5px DM Sans,sans-serif'; ctx.textAlign='center';
+  data.forEach((v,i)=>{
+    const bh=(v/max)*(H-p.t-p.b), x=p.l+i*bw+bw*.1, y=H-p.b-bh, w=bw*.8;
+    // Background track
+    ctx.fillStyle=color+'22'; ctx.beginPath(); rr(x,p.t,w,H-p.t-p.b,3); ctx.fill();
+    // Bar
+    ctx.fillStyle=color; ctx.beginPath(); rr(x,y,w,Math.max(bh,2),3); ctx.fill();
+    // Day label
+    ctx.fillStyle='#5a5a78';
+    ctx.fillText(labels[i],x+w/2,H-7);
+    // Value label
+    if(v>0){ctx.fillStyle='#9898b0'; ctx.fillText(v,x+w/2,y-3);}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// PDF EXPORT (includes journal)
+// ═══════════════════════════════════════════════════════
+function exportPDF(){
+  // HTML escape for print window (different from esc() which uses &quot;)
+  const xp = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+  const sorted=[...entries].sort((a,b)=>b.timestamp-a.timestamp);
+  const eRows=sorted.map(e=>{
+    let d='';
+    switch(e.type){
+      case 'feed': d=e.feedType==='breast'?`Breastfed – L:${e.leftDuration||0}min R:${e.rightDuration||0}min`:`Bottle – ${e.bottleAmount||0}oz`; break;
+      case 'diaper': d=xp((e.diaperTypes||[]).join('+'))+(e.notes?' | '+xp(e.notes):''); break;
+      case 'sleep': d=fmtDur(e.durationMin||0); break;
+      case 'mood': d=xp(cap(e.mood||''))+(e.notes?' | '+xp(e.notes):''); break;
+      case 'tummy': d=(e.durationMin||0)+' min'; break;
+      case 'meltdown': d=`Calmed in ${e.durationMin||'?'}min`+(e.notes?' | '+xp(e.notes):''); break;
+      case 'weight': d=`${e.lbs}lbs ${e.oz}oz`+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
+      case 'appointment': d=xp(e.apptType||'')+(e.notes?' | '+xp(e.notes):'')+(e.outcomes?' | '+xp(e.outcomes):''); break;
+      case 'medication': d=xp(e.medName||'')+(e.dose?' '+xp(e.dose):'')+(e.notes?' | '+xp(e.notes):''); break;
+    }
+    return `<tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${ICO[e.type]||''} ${xp(e.type)}</td><td>${d}</td><td>${xp(nameOf(e.by))}</td></tr>`;
+  }).join('');
+  const jRows=journals.map(j=>`<tr><td>${new Date(j.timestamp).toLocaleString()}</td><td>${xp(nameOf(j.by))}</td><td style="white-space:pre-wrap">${xp(j.text)}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html><head><title>Baby Boston Log</title>
+  <style>body{font-family:sans-serif;padding:22px;color:#222;font-size:12.5px}h1{font-size:1.25rem;margin-bottom:4px}h2{font-size:.95rem;margin:22px 0 7px;color:#555;text-transform:uppercase;letter-spacing:.05em}p{color:#666;font-size:.75rem;margin-bottom:14px}table{width:100%;border-collapse:collapse;margin-bottom:10px}th{background:#f2f2f2;padding:6px 8px;text-align:left;border-bottom:2px solid #ddd;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}td{padding:5px 8px;border-bottom:1px solid #eee;vertical-align:top}tr:nth-child(even)td{background:#fafafa}@media print{body{padding:10px}}</style>
+  </head><body>
+  <h1>🌙 Baby Boston — Full Log</h1>
+  <p>Exported ${new Date().toLocaleString()} · ${sorted.length} activity entries · ${journals.length} journal entries</p>
+  <h2>Activity Log</h2>
+  <table><thead><tr><th>Time</th><th>Type</th><th>Details</th><th>By</th></tr></thead><tbody>${eRows||'<tr><td colspan="4">No entries yet</td></tr>'}</tbody></table>
+  ${journals.length?`<h2>Journal</h2><table><thead><tr><th>Time</th><th>By</th><th>Entry</th></tr></thead><tbody>${jRows}</tbody></table>`:''}
+  <script>window.onload=()=>window.print();<\/script></body></html>`;
+  const win=window.open('','_blank');
+  if(win){win.document.write(html);win.document.close();}
+  else {
+    // Popup blocked (common on mobile) — fallback: download as HTML file
+    const blob=new Blob([html],{type:'text/html'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='baby-boston-log-'+new Date().toISOString().slice(0,10)+'.html';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('Log downloaded — open in browser to print');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// JSON BACKUP / RESTORE
+// ═══════════════════════════════════════════════════════
+function exportJSON(){
+  const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    entries,
+    journals,
+    medications,
+    settings: S
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'baby-boston-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Backup downloaded ✓');
+}
+
+function importJSON(input){
+  const file = input.files[0];
+  if(!file){ return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Basic schema validation
+      if(!data.version || !Array.isArray(data.entries) || !Array.isArray(data.journals)){
+        toast('⚠️ Invalid backup file — not a Baby Boston export');
+        return;
+      }
+      showConfirm('Replace ALL data with this backup? This cannot be undone.', () => {
+        if(Array.isArray(data.entries))     entries     = data.entries;
+        if(Array.isArray(data.journals))    journals    = data.journals;
+        if(Array.isArray(data.medications)) medications = data.medications;
+        if(data.settings && typeof data.settings === 'object'){
+          S = {...S, ...data.settings};
+          localStorage.setItem(K.s, JSON.stringify(S));
+          applySettings();
+        }
+        // Re-sort entries and journals (backup may be from different sort order)
+        entries.sort((a,b)=>b.timestamp-a.timestamp);
+        journals.sort((a,b)=>b.timestamp-a.timestamp);
+        saveAll();
+        refreshDash(); renderLog(); renderMeds(); renderJournal();
+        toast('✓ Backup restored — ' + entries.length + ' entries, ' + journals.length + ' journal entries');
+      });
+    } catch(err) {
+      toast('⚠️ Could not read file — check it is a valid JSON backup');
+    }
+    // Reset file input so the same file can be re-imported if needed
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function fmtDate(ts,style){
+  if(!ts) return '—';
+  return style==='long'
+    ? new Date(ts).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})
+    : new Date(ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function fmtDur(min){if(!min) return '0 min';if(min<60) return min+' min';return Math.floor(min/60)+'h '+(min%60)+'m';}
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):'';}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
