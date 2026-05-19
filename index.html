@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#0a0a0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Baby Boston">
-<title>Baby Boston</title>
+<meta name="apple-mobile-web-app-title" content="Baby Emmett">
+<title>Baby Emmett</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -113,7 +113,7 @@ body.theme-mom .nav {
 .qc{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;cursor:pointer;transition:transform .15s;position:relative;overflow:hidden}
 .qc:active{transform:scale(.96)}
 .qc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.qc.feed::before{background:var(--gold)}.qc.diaper::before{background:var(--blue)}.qc.sleep::before{background:var(--green)}.qc.meltdown::before{background:var(--pink)}
+.qc.feed::before{background:var(--gold)}.qc.diaper::before{background:var(--blue)}.qc.sleep::before{background:var(--green)}.qc.tummy::before{background:var(--pink)}
 .qc-ico{font-size:1.4rem;margin-bottom:5px}
 .qc-lbl{font-size:.65rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em}
 .qc-el{font-size:.95rem;font-weight:600;margin:3px 0}
@@ -231,7 +231,7 @@ body.theme-mom .nav {
 <div id="lock">
   <div style="font-size:2.8rem">🌙</div>
   <div style="text-align:center">
-    <div class="lock-title">Baby Boston</div>
+    <div class="lock-title">Baby Emmett</div>
     <div class="lock-sub" style="margin-top:5px">Enter passcode to continue</div>
   </div>
   <input id="lock-input" type="password" placeholder="passcode" autocomplete="off">
@@ -242,7 +242,7 @@ body.theme-mom .nav {
 <!-- APP -->
 <div id="app">
   <header class="hdr">
-    <div class="hdr-title"><span id="hdr-icon">🌙</span> Boston</div>
+    <div class="hdr-title"><span id="hdr-icon">🌙</span> Emmett</div>
     <div class="hdr-r">
       <div class="offline-pill" id="offline-pill">OFFLINE</div>
       <div class="who-row">
@@ -257,9 +257,10 @@ body.theme-mom .nav {
     <div style="margin-bottom:18px">
       <h2 style="font-family:'DM Serif Display',serif;font-size:1.7rem">Good <span id="greeting">evening</span> 👋</h2>
       <p id="clock" style="color:var(--tx2);font-size:.8rem;margin-top:3px"></p>
+      <p id="emmett-age" style="color:var(--gold);font-size:.82rem;margin-top:4px;font-weight:500"></p>
     </div>
     <div class="summary">
-      <div class="sum-lbl">Today at a Glance</div>
+      <div class="sum-lbl" id="sum-lbl">Today at a Glance</div>
       <div class="sum-grid">
         <div class="sum-item"><div class="sum-val" id="s-feeds">0</div><div class="sum-sub">🍼 Feeds</div></div>
         <div class="sum-item"><div class="sum-val" id="s-diapers">0</div><div class="sum-sub">🧷 Diapers</div></div>
@@ -268,31 +269,47 @@ body.theme-mom .nav {
       </div>
     </div>
     <div class="qg">
-      <button class="qc feed" onclick="openModal('feed')" aria-label="Log a feed">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div class="qc-who" id="d-feed-who">—</div>   <div class="qc-btn">+ Log Feed</div></button>
-      <button class="qc diaper" onclick="openModal('diaper')" aria-label="Log a diaper change"> <div class="qc-ico">🧷</div><div class="qc-lbl">Last Diaper</div> <div class="qc-el" id="d-diaper-el">—</div> <div class="qc-who" id="d-diaper-who">—</div> <div class="qc-btn">+ Log Diaper</div></button>
-      <button class="qc sleep" onclick="openModal('sleep')" aria-label="Log sleep">  <div class="qc-ico">😴</div><div class="qc-lbl">Sleep</div>       <div class="qc-el" id="d-sleep-el">—</div>   <div class="qc-who" id="d-sleep-who">—</div>   <div class="qc-btn">+ Log Sleep</div></button>
-      <button class="qc meltdown" onclick="openModal('meltdown')" aria-label="Log a meltdown event"><div class="qc-ico">😭</div><div class="qc-lbl">Meltdown</div> <div class="qc-el" id="d-meltdown-el">—</div><div class="qc-who" id="d-meltdown-who">—</div><div class="qc-btn">+ Log Event</div></button>
+      <button class="qc feed" onclick="openModal('feed')" aria-label="Log a feed">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div id="d-feed-side" style="font-size:.72rem;color:var(--gold);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-feed-who">—</div>   <div class="qc-btn">+ Log Feed</div></button>
+      <button class="qc diaper" onclick="openModal('diaper')" aria-label="Log a diaper change"> <div class="qc-ico">🧷</div><div class="qc-lbl">Last Diaper</div> <div class="qc-el" id="d-diaper-el">—</div> <div id="d-diaper-type" style="font-size:.72rem;color:var(--blue);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-diaper-who">—</div> <div class="qc-btn">+ Log Diaper</div></button>
+      <button class="qc sleep" onclick="openModal('sleep')" aria-label="Log sleep">  <div class="qc-ico">😴</div><div class="qc-lbl">Sleep</div>       <div class="qc-el" id="d-sleep-el">—</div>   <div id="d-sleep-live" style="font-size:.72rem;color:var(--green);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-sleep-who">—</div>   <div class="qc-btn" id="d-sleep-btn">+ Log Sleep</div></button>
+      <button class="qc tummy" onclick="openModal('tummy')" aria-label="Log tummy time"><div class="qc-ico">⏱️</div><div class="qc-lbl">Tummy Time</div><div class="qc-el" id="d-tummy-el">—</div><div class="qc-who" id="d-tummy-who">—</div><div class="qc-btn">+ Log Tummy</div></button>
     </div>
-    <div class="sh"><div class="st">Recent Activity</div></div>
+    <div class="sh">
+      <div class="st" id="recent-label">Recent Activity</div>
+    </div>
     <div class="ll" id="recent-list"></div>
+    <div style="margin-top:18px;padding:13px;background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:.72rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">View date</span>
+      <input type="date" id="dash-date-pick" class="fi" style="flex:1;min-width:130px;font-size:.82rem;padding:6px 10px"
+             onchange="setDashDate(this.value)">
+      <button id="dash-today-btn" onclick="setDashDate(null)"
+              style="display:none;background:var(--gold);color:#0a0a0f;border:none;border-radius:8px;padding:6px 13px;font-size:.78rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">
+        ← Today
+      </button>
+    </div>
   </div>
 
   <!-- LOG -->
   <div class="page" id="page-log">
     <div class="sh" style="margin-bottom:13px">
       <div class="st">All Entries</div>
-      <select class="fs" id="log-filter" onchange="renderLog(true)" style="width:auto;padding:5px 27px 5px 9px;font-size:.76rem">
-        <option value="all">All</option>
-        <option value="feed">Feeds</option>
-        <option value="diaper">Diapers</option>
-        <option value="sleep">Sleep</option>
-        <option value="mood">Mood</option>
-        <option value="tummy">Tummy Time</option>
-        <option value="meltdown">Meltdowns</option>
-        <option value="weight">Weight</option>
-        <option value="appointment">Appointments</option>
-        <option value="medication">Medications</option>
-      </select>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select class="fs" id="log-day" onchange="renderLog(true)" style="width:auto;padding:5px 27px 5px 9px;font-size:.76rem">
+          <option value="all">All days</option>
+        </select>
+        <select class="fs" id="log-filter" onchange="renderLog(true)" style="width:auto;padding:5px 27px 5px 9px;font-size:.76rem">
+          <option value="all">All types</option>
+          <option value="feed">Feeds</option>
+          <option value="diaper">Diapers</option>
+          <option value="sleep">Sleep</option>
+          <option value="mood">Mood</option>
+          <option value="tummy">Tummy Time</option>
+          <option value="meltdown">Meltdowns</option>
+          <option value="weight">Weight</option>
+          <option value="appointment">Appointments</option>
+          <option value="medication">Medications</option>
+        </select>
+      </div>
     </div>
     <div class="ll" id="full-list"></div>
   </div>
@@ -301,7 +318,7 @@ body.theme-mom .nav {
   <div class="page" id="page-journal">
     <div class="jc">
       <label class="jc-l" for="journal-input">✍️ New Entry</label>
-      <textarea class="fta" id="journal-input" placeholder="Boston smiled today... She was so fussy until Dad sang to her... Things to tell the pediatrician..." style="min-height:96px"></textarea>
+      <textarea class="fta" id="journal-input" placeholder="Emmett smiled today... He was so fussy until Dad sang to him... Things to tell the pediatrician..." style="min-height:96px"></textarea>
       <button class="btn-p" onclick="submitJournal()">Save Entry</button>
     </div>
     <div class="sh"><div class="st">Journal</div></div>
@@ -322,7 +339,7 @@ body.theme-mom .nav {
     <div class="st" style="margin-bottom:13px">Track More</div>
     <div class="qg" style="margin-bottom:18px">
       <button class="qc" onclick="openModal('mood')" aria-label="Log mood"><div class="qc-ico">😊</div><div class="qc-lbl">Mood</div><div class="qc-btn">+ Log Mood</div></button>
-      <button class="qc" onclick="openModal('tummy')" aria-label="Log tummy time"><div class="qc-ico">⏱️</div><div class="qc-lbl">Tummy Time</div><div class="qc-btn">+ Log Session</div></button>
+      <button class="qc" onclick="openModal('meltdown')" aria-label="Log a meltdown event"><div class="qc-ico">😭</div><div class="qc-lbl">Meltdown</div><div class="qc-btn">+ Log Event</div></button>
       <button class="qc" onclick="openModal('weight')" aria-label="Log weight and growth"><div class="qc-ico">⚖️</div><div class="qc-lbl">Weight / Growth</div><div class="qc-btn">+ Log</div></button>
       <button class="qc" onclick="openModal('appointment')" aria-label="Log an appointment"><div class="qc-ico">🩺</div><div class="qc-lbl">Appointment</div><div class="qc-btn">+ Log Visit</div></button>
     </div>
@@ -371,7 +388,7 @@ body.theme-mom .nav {
       </div>
     </div>
     <div style="text-align:center;padding:16px;color:var(--tx3);font-size:.7rem;line-height:1.7">
-      Baby Boston • Made with love 🌙<br>All data belongs to your family
+      Baby Emmett • Made with love 🌙<br>All data belongs to your family
     </div>
   </div>
 
@@ -418,14 +435,14 @@ body.theme-mom .nav {
         </div>
       </div>
       <div class="r2">
-        <div class="fg"><label class="fl" for="f-left">Left (min)</label><input class="fi" type="number" id="f-left" inputmode="numeric" placeholder="0" min="0"></div>
-        <div class="fg"><label class="fl" for="f-right">Right (min)</label><input class="fi" type="number" id="f-right" inputmode="numeric" placeholder="0" min="0"></div>
+        <div class="fg"><label class="fl" for="f-left">Left (min)</label><input class="fi" type="number" id="f-left" inputmode="numeric" placeholder="0" min="0" oninput="updateFeedTime()"></div>
+        <div class="fg"><label class="fl" for="f-right">Right (min)</label><input class="fi" type="number" id="f-right" inputmode="numeric" placeholder="0" min="0" oninput="updateFeedTime()"></div>
       </div>
     </div>
     <div id="bottle-fields" style="display:none">
       <div class="fg"><label class="fl" for="f-oz">Amount (oz)</label><input class="fi" type="number" id="f-oz" inputmode="decimal" placeholder="e.g. 3" min="0" step="0.5"></div>
     </div>
-    <div class="fg"><label class="fl" for="f-time">Time</label><input class="fi" type="datetime-local" id="f-time"></div>
+    <div class="fg"><label class="fl" for="f-time">Start Time</label><input class="fi" type="datetime-local" id="f-time" oninput="fTimeEdited=true"><div id="f-time-hint" style="font-size:.7rem;color:var(--tx3);margin-top:4px"></div></div>
     <button class="btn-p" onclick="submitFeed()">Save Feed</button>
     <button class="btn-c" onclick="closeModal()">Cancel</button>
   </div>
@@ -448,12 +465,27 @@ body.theme-mom .nav {
 
   <!-- SLEEP -->
   <div class="modal" id="m-sleep" style="display:none">
-    <div class="mh"></div><div class="mt">😴 Log Sleep</div>
-    <div class="r2">
-      <div class="fg"><label class="fl" for="sl-start">Start</label><input class="fi" type="datetime-local" id="sl-start"></div>
-      <div class="fg"><label class="fl" for="sl-end">End</label><input class="fi"   type="datetime-local" id="sl-end"></div>
+    <div class="mh"></div><div class="mt">😴 Sleep</div>
+    <!-- Active sleep panel (shown when sleeping) -->
+    <div id="sl-active" style="display:none;text-align:center;padding:8px 0 18px">
+      <div style="font-size:2.2rem;margin-bottom:4px">😴</div>
+      <div style="font-size:.78rem;color:var(--tx2);margin-bottom:4px">Emmett has been sleeping for</div>
+      <div id="sl-timer-disp" style="font-size:2rem;font-weight:700;color:var(--green);font-family:'DM Serif Display',serif">0:00</div>
+      <div style="font-size:.7rem;color:var(--tx3);margin-top:4px" id="sl-since"></div>
+      <button class="btn-p" onclick="endSleepNow()" style="margin-top:18px;background:var(--green);color:#0a0a0f">☀️ Emmett Woke Up</button>
     </div>
-    <button class="btn-p" onclick="submitSleep()">Save Sleep</button>
+    <!-- Start sleep panel (shown when awake) -->
+    <div id="sl-idle">
+      <button class="btn-p" onclick="startSleepNow()" style="background:var(--blue);color:#0a0a0f;margin-bottom:12px">😴 Baby Fell Asleep</button>
+      <div style="border-top:1px solid var(--bdr);padding-top:14px;margin-top:2px">
+        <div class="fl" style="margin-bottom:8px;color:var(--tx3);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em">Or log a past sleep session</div>
+        <div class="r2">
+          <div class="fg"><label class="fl" for="sl-start">Start</label><input class="fi" type="datetime-local" id="sl-start"></div>
+          <div class="fg"><label class="fl" for="sl-end">End</label><input class="fi" type="datetime-local" id="sl-end"></div>
+        </div>
+        <button class="btn-p" onclick="submitSleep()">Save Past Sleep</button>
+      </div>
+    </div>
     <button class="btn-c" onclick="closeModal()">Cancel</button>
   </div>
 
@@ -471,7 +503,7 @@ body.theme-mom .nav {
   <div class="modal" id="m-mood" style="display:none">
     <div class="mh"></div><div class="mt">😊 Log Mood</div>
     <div class="fg">
-      <label class="fl">How's Boston feeling?</label>
+      <label class="fl">How's Emmett feeling?</label>
       <div class="mood-row" id="mood-row">
         <button class="mb on" data-val="happy"  onclick="pickMood(this)" aria-pressed="true">😄<div class="mb-lbl">Happy</div></button>
         <button class="mb"    data-val="calm"   onclick="pickMood(this)" aria-pressed="false">😌<div class="mb-lbl">Calm</div></button>
@@ -550,6 +582,15 @@ body.theme-mom .nav {
     <button class="btn-c" onclick="closeModal()">Cancel</button>
   </div>
 
+  <!-- EDIT ENTRY -->
+  <div class="modal" id="m-edit" style="display:none">
+    <div class="mh"></div><div class="mt">✏️ Edit Entry</div>
+    <div id="edit-fields"></div>
+    <input type="hidden" id="edit-id">
+    <button class="btn-p" onclick="submitEdit()">Save Changes</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
 </div><!-- /overlay -->
 
 <div class="confirm-bar" id="confirm-bar">
@@ -563,8 +604,8 @@ body.theme-mom .nav {
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-const PASS = 'babyboston';
-const K = { e:'bb_e', m:'bb_m', s:'bb_s', p:'bb_p', fb:'bb_fb', j:'bb_j' };
+const PASS = 'e';
+const K = { e:'bb_e', m:'bb_m', s:'bb_s', p:'bb_p', j:'bb_j' };
 
 let S = { feedType:'breast', nameMom:'', nameDad:'', lastUser:'Mom' };
 let entries    = [];
@@ -579,6 +620,11 @@ let online     = navigator.onLine;
 // Timer state
 let tIv = null, tTo = null, tTs = null, tSide = null, tL = 0, tR = 0;
 const T_MAX = 7200000; // 2h
+let sleepModalIv = null; // fast interval while sleep modal is open
+
+// Sleep tracking state
+let sleepStart = null;  // ms timestamp when baby fell asleep, null if not sleeping
+let sleepIv = null;     // interval for sleep timer display
 
 // ═══════════════════════════════════════════════════════
 // BOOT
@@ -620,12 +666,16 @@ function boot() {
   applySettings();
   detectTZ();
   tick(); setInterval(tick, 30000);
+  showAge(); // calculate once on load — age only changes meaningfully day-to-day
   setInterval(refreshDash, 10000);
   window.addEventListener('online',  () => { online=true;  document.getElementById('offline-pill').classList.remove('show'); syncPending(); });
   window.addEventListener('offline', () => { online=false; document.getElementById('offline-pill').classList.add('show'); });
   if (!online) document.getElementById('offline-pill').classList.add('show');
   // Auto-connect using baked-in config — works on every device with no manual setup
   initFb(FB_CFG);
+  // Set date picker to today on boot
+  const _dp = document.getElementById('dash-date-pick');
+  if (_dp) _dp.value = todayLocal();
   refreshDash(); renderLog(); renderMeds(); renderJournal();
 }
 
@@ -638,6 +688,8 @@ function loadLocal() {
   try { const v=localStorage.getItem(K.s); if(v) S={...S,...JSON.parse(v)}; } catch(e){}
   try { const v=localStorage.getItem(K.p); if(v) pending=JSON.parse(v); } catch(e){}
   try { const v=localStorage.getItem(K.j); if(v) journals=JSON.parse(v); } catch(e){}
+  // Restore active sleep session across page reloads
+  try { const v=localStorage.getItem('bb_sl'); if(v) { sleepStart=parseInt(v); startSleepTimer(); } } catch(e){}
 }
 function saveAll() {
   try {
@@ -680,9 +732,6 @@ function applySettings() {
 // ═══════════════════════════════════════════════════════
 // FIREBASE
 // ═══════════════════════════════════════════════════════
-function saveFirebaseConfig() {
-  // Config is now baked into the app — this function is no longer used
-}
 
 // Track whether Firebase SDK scripts are already loaded
 let fbSdkLoaded = false;
@@ -822,14 +871,19 @@ function syncPending(){
   const toSync = [...pending];
   pending = [];
   localStorage.setItem(K.p, '[]');
-  toSync.forEach(item => {
-    const op = item.data === null
+  // Collect all failures before writing localStorage — individual .catch() calls
+  // race each other and only the last failure would survive in storage.
+  Promise.all(toSync.map(item =>
+    (item.data === null
       ? fbRef.child(item.path).child(item.id).remove()
-      : fbRef.child(item.path).child(item.id).set(item.data);
-    op.catch(() => {
-      pending.push(item);
+      : fbRef.child(item.path).child(item.id).set(item.data)
+    ).then(() => ({ok:true})).catch(() => ({ok:false, item}))
+  )).then(results => {
+    const failed = results.filter(r => !r.ok).map(r => r.item);
+    if (failed.length) {
+      pending.push(...failed);
       localStorage.setItem(K.p, JSON.stringify(pending));
-    });
+    }
   });
 }
 
@@ -842,6 +896,7 @@ function navTo(btn) {
   const pg = btn.dataset.page;
   document.getElementById('page-'+pg).classList.add('on');
   btn.classList.add('on');
+  if(pg==='home')    { _dashPrint=''; refreshDash(); } // force refresh — data may have changed while away
   if(pg==='trends') renderTrends();
   if(pg==='more')   renderMeds();
   if(pg==='log')    renderLog(true);
@@ -864,7 +919,7 @@ function applyTheme(u) {
   const isMom = u === 'Mom';
   const icon = isMom ? '☀️' : '🌙';
   document.getElementById('hdr-icon').textContent = icon;
-  document.title = icon + ' Baby Boston';
+  document.title = icon + ' Baby Emmett';
 }
 function refreshWho() {
   document.getElementById('btn-mom').textContent = S.nameMom||'Mom';
@@ -883,6 +938,23 @@ function tick() {
   const h=new Date().getHours();
   document.getElementById('greeting').textContent = h<12?'morning':h<17?'afternoon':'evening';
   document.getElementById('clock').textContent = new Date().toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+}
+
+// Calculate Emmett's age once per page load — no need to recalculate every 30s
+function showAge() {
+  const BIRTH = new Date(2026, 4, 12, 0, 0, 0).getTime(); // May 12 2026, month is 0-indexed
+  const diffMs = Date.now() - BIRTH;
+  const diffHrs = diffMs / 3600000;
+  const diffDays = diffMs / 86400000;
+  const diffWks = diffDays / 7;
+  const diffMos = diffDays / 30.4375;
+  let ageStr;
+  if (diffHrs < 48)        ageStr = Math.floor(diffHrs) + ' hours old';
+  else if (diffDays < 14)  ageStr = Math.floor(diffDays) + ' days old';
+  else if (diffDays < 90)  ageStr = Math.floor(diffWks) + ' weeks old';
+  else                     ageStr = (diffMos < 24 ? Math.floor(diffMos) + ' months old' : Math.floor(diffMos/12) + ' years old');
+  const el = document.getElementById('emmett-age');
+  if (el) el.textContent = '🐣 Emmett is ' + ageStr;
 }
 function detectTZ() {
   document.getElementById('tz-name').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -912,30 +984,99 @@ function parseLocal(id) {
 // ═══════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════
+let _dashPrint = ''; // fingerprint of last rendered state
+let dashDate = null;  // null = today; 'YYYY-MM-DD' string = browsing a past day
+
+// Set the home screen date; null or empty resets to today
+function setDashDate(val) {
+  dashDate = val || null;
+  _dashPrint = ''; // force re-render regardless of fingerprint
+  const btn  = document.getElementById('dash-today-btn');
+  const pick = document.getElementById('dash-date-pick');
+  if (btn)  btn.style.display  = dashDate ? 'block' : 'none';
+  if (pick && !dashDate) pick.value = todayLocal();
+  refreshDash();
+}
+
 function refreshDash() {
-  const start=new Date(); start.setHours(0,0,0,0);
-  const tm=start.getTime();
-  const te=entries.filter(e=>e.timestamp>=tm);
-  // Summary
-  const feeds=te.filter(e=>e.type==='feed').length;
-  const diapers=te.filter(e=>e.type==='diaper').length;
-  const sleepM=te.filter(e=>e.type==='sleep').reduce((a,e)=>a+(e.durationMin||0),0);
-  const tummyM=te.filter(e=>e.type==='tummy').reduce((a,e)=>a+(e.durationMin||0),0);
+  // Determine the day window to display
+  const isToday = !dashDate;
+  let dayStart;
+  if (isToday) {
+    dayStart = new Date(); dayStart.setHours(0,0,0,0);
+  } else {
+    // Parse as local midnight — appending T00:00:00 avoids UTC shift on date-only strings
+    dayStart = new Date(dashDate + 'T00:00:00');
+  }
+  const dayStartMs = dayStart.getTime();
+  const dayEndMs   = dayStartMs + 86400000;
+
+  // Fingerprint — include dashDate so switching days always forces re-render
+  const minuteNow  = Math.floor(Date.now()/60000);
+  const dayEntries = entries.filter(e => e.timestamp >= dayStartMs && e.timestamp < dayEndMs);
+  const print = (dashDate||'today')+'|'+dayEntries.length+'|'+entries.slice(0,3).map(e=>e.id).join(',')+'|'+minuteNow+'|'+(sleepStart||0);
+  if (print === _dashPrint) return;
+  _dashPrint = print;
+
+  // Summary label — update to reflect selected date
+  const sumLbl = document.getElementById('sum-lbl');
+  if (sumLbl) {
+    sumLbl.textContent = isToday
+      ? 'Today at a Glance'
+      : dayStart.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) + ' at a Glance';
+  }
+
+  // Counts for the selected day
+  const feeds   = dayEntries.filter(e=>e.type==='feed').length;
+  const diapers = dayEntries.filter(e=>e.type==='diaper').length;
+  const sleepM  = dayEntries.filter(e=>e.type==='sleep').reduce((a,e)=>a+(e.durationMin||0),0);
+  const tummyM  = dayEntries.filter(e=>e.type==='tummy').reduce((a,e)=>a+(e.durationMin||0),0);
   document.getElementById('s-feeds').textContent=feeds;
   document.getElementById('s-diapers').textContent=diapers;
   const sh=Math.floor(sleepM/60), sm=sleepM%60;
   document.getElementById('s-sleep').textContent=sh>0?sh+'h'+(sm?sm+'m':''):sleepM+'m';
   document.getElementById('s-tummy').textContent=tummyM+'m';
-  // Cards (entries are sorted desc, so .find gives most recent)
-  ['feed','diaper','sleep','meltdown'].forEach(t=>{
+
+  // Cards: always most-recent-ever — these are live status, not historical summaries
+  ['feed','diaper','sleep','tummy'].forEach(t=>{
     const last=entries.find(e=>e.type===t);
     document.getElementById('d-'+t+'-el').textContent=last?elapsed(last.timestamp):'—';
     document.getElementById('d-'+t+'-who').textContent=last?nameOf(last.by):'No entries yet';
   });
-  // Recent
-  const el=document.getElementById('recent-list');
-  const r=entries.slice(0,5);
-  el.innerHTML=r.length?r.map(entryHTML).join(''):'<div class="empty"><div class="empty-ico">🌙</div>No entries yet.<br>Log Boston\'s first event!</div>';
+
+  // Diaper card: wet/dirty from most recent diaper ever
+  const dTypeEl = document.getElementById('d-diaper-type');
+  if (dTypeEl) {
+    const lastDiaper = entries.find(e => e.type==='diaper');
+    if (lastDiaper && lastDiaper.diaperTypes && lastDiaper.diaperTypes.length) {
+      const types = lastDiaper.diaperTypes;
+      dTypeEl.textContent = (types.includes('wet') && types.includes('dirty'))
+        ? 'Wet + Dirty' : types.includes('dirty') ? 'Dirty' : 'Wet';
+    } else { dTypeEl.textContent = ''; }
+  }
+
+  // Feed card: next breast side from most recent feed ever
+  const sideEl = document.getElementById('d-feed-side');
+  if (sideEl) {
+    const lastFeed = entries.find(e => e.type==='feed');
+    if (lastFeed && lastFeed.feedType==='breast') {
+      const l = lastFeed.leftDuration || 0, r = lastFeed.rightDuration || 0;
+      if (l > 0 && r > 0)      sideEl.textContent = 'Next: ' + (l >= r ? 'R' : 'L') + ' side';
+      else if (l > 0)           sideEl.textContent = 'Last: L · Next: R';
+      else if (r > 0)           sideEl.textContent = 'Last: R · Next: L';
+      else                      sideEl.textContent = '';
+    } else { sideEl.textContent = ''; }
+  }
+
+  // Activity list — filtered to selected day, up to 20 entries
+  const recentLbl = document.getElementById('recent-label');
+  if (recentLbl) recentLbl.textContent = isToday ? 'Recent Activity' : 'Activity That Day';
+  const listEl = document.getElementById('recent-list');
+  listEl.innerHTML = dayEntries.length
+    ? dayEntries.slice(0,20).map(entryHTML).join('')
+    : '<div class="empty"><div class="empty-ico">🌙</div>'
+      + (isToday ? 'No entries yet.<br>Log Emmett\'s first event!' : 'No entries on this day.')
+      + '</div>';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -956,6 +1097,8 @@ function openModal(type) {
 function prepModal(type) {
   const now=nowLocal();
   if(type==='feed'){
+    fTimeEdited = false; // reset manual-edit flag for fresh modal
+    const fhint=document.getElementById('f-time-hint'); if(fhint) fhint.textContent='';
     document.getElementById('f-time').value=now;
     cSingleByVal('c-feedtype', S.feedType||'breast');
     updateFeedFields();
@@ -970,11 +1113,22 @@ function prepModal(type) {
     document.querySelectorAll('#c-diaper .chip').forEach(c=>{const on=c.dataset.val==='wet';c.classList.toggle('on',on);c.setAttribute('aria-checked',on?'true':'false');});
   }
   if(type==='sleep'){
-    document.getElementById('sl-start').value=now;
-    // Default end to 1 hour after start — prevents accidental 0-minute saves
-    const endD=new Date(); endD.setHours(endD.getHours()+1);
-    const _p=n=>String(n).padStart(2,'0');
-    document.getElementById('sl-end').value=`${endD.getFullYear()}-${_p(endD.getMonth()+1)}-${_p(endD.getDate())}T${_p(endD.getHours())}:${_p(endD.getMinutes())}`;
+    // Start a fast update interval so the modal timer ticks while open
+    clearInterval(sleepModalIv);
+    sleepModalIv = setInterval(updateSleepLive, 10000);
+    const isSleeping = sleepStart !== null;
+    document.getElementById('sl-active').style.display = isSleeping ? 'block' : 'none';
+    document.getElementById('sl-idle').style.display   = isSleeping ? 'none'  : 'block';
+    if (isSleeping) {
+      // Show how long asleep
+      document.getElementById('sl-since').textContent = 'Started ' + fmtDate(sleepStart, 'short');
+    } else {
+      // Pre-fill manual fallback with sensible defaults
+      document.getElementById('sl-start').value = now;
+      const endD=new Date(); endD.setHours(endD.getHours()+1);
+      const _p=n=>String(n).padStart(2,'0');
+      document.getElementById('sl-end').value=`${endD.getFullYear()}-${_p(endD.getMonth()+1)}-${_p(endD.getDate())}T${_p(endD.getHours())}:${_p(endD.getMinutes())}`;
+    }
   }
   if(type==='meltdown'){document.getElementById('ml-time').value=now;document.getElementById('ml-dur').value='';document.getElementById('ml-notes').value='';}
   if(type==='mood'){document.getElementById('mo-time').value=now;document.getElementById('mo-notes').value='';document.querySelectorAll('#mood-row .mb').forEach((b,i)=>{b.classList.toggle('on',i===0);b.setAttribute('aria-pressed',i===0?'true':'false');});}
@@ -989,6 +1143,7 @@ function prepModal(type) {
 }
 function closeModal() {
   if(activeModal==='feed') tReset();
+  if(activeModal==='sleep') { clearInterval(sleepModalIv); sleepModalIv=null; }
   document.getElementById('overlay').classList.remove('on');
   document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
   activeModal=null;
@@ -1009,7 +1164,27 @@ function cMulti(el){ el.classList.toggle('on'); el.setAttribute('aria-checked', 
 function chipVals(cid){ return [...document.querySelectorAll('#'+cid+' .chip.on')].map(c=>c.dataset.val); }
 function chipVal(cid){ const el=document.querySelector('#'+cid+' .chip.on'); return el?el.dataset.val:null; }
 
-function pickMood(el){document.querySelectorAll('#mood-row .mb').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false');});el.classList.add('on');el.setAttribute('aria-pressed','true');}
+function pickMood(el){const row=el.closest('.mood-row');if(row)row.querySelectorAll('.mb').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false');});el.classList.add('on');el.setAttribute('aria-pressed','true');}
+let fTimeEdited = false; // true if user has manually edited f-time since last auto-fill
+
+// When duration minutes are entered, back-calculate the feed start time.
+// Skips auto-fill if the user has manually edited the time field.
+function updateFeedTime() {
+  if (fTimeEdited) return; // respect manual edits
+  const l = parseInt(document.getElementById('f-left').value) || 0;
+  const r = parseInt(document.getElementById('f-right').value) || 0;
+  const total = l + r;
+  const hint = document.getElementById('f-time-hint');
+  if (total <= 0) { if(hint) hint.textContent = ''; return; }
+  // Calculate start = now - total minutes
+  const startMs = Date.now() - total * 60000;
+  const d = new Date(startMs);
+  const pad = n => String(n).padStart(2,'0');
+  const localStr = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  document.getElementById('f-time').value = localStr;
+  if(hint) hint.textContent = 'Start time set to ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' (' + total + ' min ago) — edit above to adjust';
+}
+
 function updateFeedFields(){const t=chipVal('c-feedtype');document.getElementById('breast-fields').style.display=t==='breast'?'block':'none';document.getElementById('bottle-fields').style.display=t==='bottle'?'block':'none';}
 
 // ═══════════════════════════════════════════════════════
@@ -1033,8 +1208,9 @@ function addEntry(type, data, opts={}) {
 // SUBMIT HANDLERS
 // ═══════════════════════════════════════════════════════
 function submitFeed(){
-  const ft=chipVal('c-feedtype')||'breast';
   const ts=parseLocal('f-time');
+  const ft=chipVal('c-feedtype')||'breast';
+  autoEndSleep('feed', ts);
   if(ft==='breast'){
     const ld=Math.max(0,parseInt(document.getElementById('f-left').value)||0);
     const rd=Math.max(0,parseInt(document.getElementById('f-right').value)||0);
@@ -1044,12 +1220,66 @@ function submitFeed(){
   }
 }
 function submitDiaper(){
-  addEntry('diaper',{diaperTypes:chipVals('c-diaper'),notes:document.getElementById('d-notes').value.trim(),timestamp:parseLocal('d-time')});
+  const ts=parseLocal('d-time');
+  autoEndSleep('diaper change', ts);
+  addEntry('diaper',{diaperTypes:chipVals('c-diaper'),notes:document.getElementById('d-notes').value.trim(),timestamp:ts});
 }
 function submitSleep(){
   const s=parseLocal('sl-start'), e=parseLocal('sl-end');
   if(e<=s){toast('⚠️ End time must be after start time');return;}
   addEntry('sleep',{sleepStart:s,sleepEnd:e,durationMin:Math.round((e-s)/60000),timestamp:s});
+}
+function startSleepNow() {
+  sleepStart = Date.now();
+  localStorage.setItem('bb_sl', sleepStart);
+  startSleepTimer();
+  closeModal();
+  toast('😴 Sleep started');
+}
+function startSleepTimer() {
+  clearInterval(sleepIv);
+  updateSleepLive();
+  sleepIv = setInterval(updateSleepLive, 30000);
+}
+function updateSleepLive() {
+  const el = document.getElementById('d-sleep-live');
+  const btn = document.getElementById('d-sleep-btn');
+  const disp = document.getElementById('sl-timer-disp');
+  if (!sleepStart) { if(el) el.textContent=''; if(btn) btn.textContent='+ Log Sleep'; return; }
+  const mins = Math.floor((Date.now() - sleepStart) / 60000);
+  const h = Math.floor(mins/60), m = mins%60;
+  const txt = h>0 ? h+'h '+(m?m+'m ':'')+'sleeping' : mins+'m sleeping';
+  if(el)   el.textContent = txt;
+  if(btn)  btn.textContent = '☀️ Wake Up';
+  if(disp) disp.textContent = h>0 ? h+':'+(String(m).padStart(2,'0')) : mins+':00';
+}
+function endSleepNow() {
+  if (!sleepStart) { closeModal(); return; }
+  const end = Date.now();
+  const dur = Math.round((end - sleepStart) / 60000);
+  if (dur < 1) { toast('⚠️ Sleep was less than 1 minute — not logged'); sleepStart=null; localStorage.removeItem('bb_sl'); clearInterval(sleepIv); updateSleepLive(); closeModal(); return; }
+  addEntry('sleep',{sleepStart,sleepEnd:end,durationMin:dur,timestamp:sleepStart});
+  sleepStart = null;
+  localStorage.removeItem('bb_sl');
+  clearInterval(sleepIv); sleepIv = null;
+  updateSleepLive();
+}
+// Called from submitFeed and submitDiaper to auto-end an active sleep session.
+// endTs is the timestamp of the triggering event (feed/diaper time the user entered),
+// so backdated entries produce a coherent timeline instead of ending sleep at now().
+function autoEndSleep(reason, endTs) {
+  if (!sleepStart) return;
+  // Use the event timestamp if it's after sleepStart, else fall back to now
+  const end = (endTs && endTs > sleepStart) ? endTs : Date.now();
+  const dur = Math.round((end - sleepStart) / 60000);
+  if (dur >= 1) {
+    addEntry('sleep',{sleepStart,sleepEnd:end,durationMin:dur,timestamp:sleepStart},{silent:true});
+    toast('😴 Sleep ended automatically (' + dur + ' min) — ' + reason + ' logged');
+  }
+  sleepStart = null;
+  localStorage.removeItem('bb_sl');
+  clearInterval(sleepIv); sleepIv = null;
+  updateSleepLive();
 }
 function submitMeltdown(){
   addEntry('meltdown',{durationMin:Math.max(0,parseInt(document.getElementById('ml-dur').value)||0),notes:document.getElementById('ml-notes').value.trim(),timestamp:parseLocal('ml-time')});
@@ -1101,11 +1331,11 @@ function submitMedLog(){
   // Push the log as its own Firebase child so concurrent writes from both phones
   // never overwrite each other (race condition fix — was: fbPush('medications',med.id,med))
   fbPush('medlogs', logId, {...log, medId});
-  // Also update the medication object itself (without logs array) to keep name/dose/schedule in sync
-  fbPushMedMeta(med);
+  // Removed redundant fbPushMedMeta(med) — medication metadata only changes when
+  // editing the medication itself, not when logging a dose. Saves a write per dose.
   renderMeds();
-  // Add to activity log silently (don't close modal twice or double-toast)
-  addEntry('medication',{medName:med.name,dose:med.dose,notes:log.notes,timestamp:ts},{silent:true});
+  // Store logId on the activity entry so deleteEntry can clean up medlogs from Firebase
+  addEntry('medication',{medName:med.name,dose:med.dose,notes:log.notes,medLogId:logId,timestamp:ts},{silent:true});
   closeModal();
   toast('Dose logged ✓');
 }
@@ -1114,9 +1344,10 @@ function submitMedLog(){
 // ═══════════════════════════════════════════════════════
 let confirmCb = null;
 let confirmTo = null;
-function showConfirm(msg, cb) {
+function showConfirm(msg, cb, yesLabel) {
   confirmCb = cb;
   document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-yes').textContent = yesLabel || 'Delete';
   document.getElementById('confirm-yes').onclick = () => { hideConfirm(); cb(); };
   const bar = document.getElementById('confirm-bar');
   bar.classList.add('show');
@@ -1138,12 +1369,19 @@ function deleteMed(id){
       med.logs.forEach(l => { if(l.id) fbRemove('medlogs', l.id); });
     }
     renderMeds();
-  });
+  }, 'Remove');
 }
 function deleteEntry(id){
   showConfirm('Delete this entry?', () => {
+    const entry = entries.find(e => e.id === id);
     entries=entries.filter(e=>e.id!==id); saveAll();
-    fbRemove('entries',id); refreshDash(); renderLog(); toast('Entry deleted');
+    fbRemove('entries',id);
+    // If this is a medication dose entry, also remove the medlog so the
+    // dose doesn't ghost-appear in the medication's dose history after next sync
+    if (entry && entry.type === 'medication' && entry.medLogId) {
+      fbRemove('medlogs', entry.medLogId);
+    }
+    refreshDash(); renderLog(); toast('Entry deleted');
   });
 }
 function deleteJournal(id){
@@ -1191,6 +1429,11 @@ function tStop(){
   document.getElementById('t-stop').disabled=true;
   document.getElementById('t-switch').disabled=true;
   document.getElementById('t-foot').textContent='';
+  // Back-calculate start time from actual timer duration — oninput doesn't fire on
+  // programmatic value assignment so we call updateFeedTime() explicitly here.
+  // Reset fTimeEdited first so the timer always wins over a stale manual edit.
+  fTimeEdited = false;
+  updateFeedTime();
 }
 function tReset(){
   clearInterval(tIv); clearTimeout(tTo); tIv=null; tTo=null; tTs=null; tSide=null; tL=0; tR=0;
@@ -1207,7 +1450,9 @@ function submitJournal(){
   const text=document.getElementById('journal-input').value.trim();
   if(!text){toast('Write something first!');return;}
   const j={id:uid(),text,by:who,timestamp:Date.now()};
-  journals.unshift(j); saveAll();
+  journals.unshift(j);
+  journals.sort((a,b) => b.timestamp - a.timestamp); // keep order correct if logging offline
+  saveAll();
   fbPush('journals',j.id,j);
   document.getElementById('journal-input').value='';
   renderJournal(); toast('Journal entry saved 📝');
@@ -1247,7 +1492,7 @@ function entryHTML(e){
     case 'medication': title=e.medName||'Medication'; detail=(e.dose||'')+(e.notes?' — '+e.notes:''); break;
     default: title=e.type;
   }
-  return `<div class="li"><div class="li-ico">${ICO[e.type]||'📝'}</div><div class="li-body"><div class="li-title">${esc(title)}</div>${detail?`<div class="li-detail">${esc(detail)}</div>`:''}<div class="li-meta">${fmtDate(e.timestamp,'short')} · ${esc(nameOf(e.by))}</div></div><button class="del-btn" aria-label="Delete ${esc(e.type)} entry" onclick="deleteEntry('${e.id}')">✕</button></div>`;
+  return `<div class="li"><div class="li-ico">${ICO[e.type]||'📝'}</div><div class="li-body"><div class="li-title">${esc(title)}</div>${detail?`<div class="li-detail">${esc(detail)}</div>`:''}<div class="li-meta">${fmtDate(e.timestamp,'short')} · ${esc(nameOf(e.by))}</div></div><div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0"><button class="del-btn" aria-label="Edit ${esc(e.type)} entry" onclick="openEdit('${e.id}')" style="color:var(--blue)">✎</button><button class="del-btn" aria-label="Delete ${esc(e.type)} entry" onclick="deleteEntry('${e.id}')">✕</button></div></div>`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1258,8 +1503,45 @@ let logPage = 1;
 function renderLog(reset){
   const el=document.getElementById('full-list'); if(!el) return;
   if(reset) logPage=1;
-  const f=document.getElementById('log-filter').value;
-  const list=entries.filter(e=>f==='all'||e.type===f);
+  // Populate day filter with unique days present in entries
+  const daySel = document.getElementById('log-day');
+  const currentDay = daySel.value;
+  // Build unique days from entries (newest first)
+  const dayMap = new Map();
+  entries.forEach(e => {
+    const d = new Date(e.timestamp);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if (!dayMap.has(key)) {
+      dayMap.set(key, d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
+    }
+  });
+  // Rebuild options only if the set of days has actually changed.
+  // Compare the joined key string — more reliable than just length,
+  // which would reset the selection when a new entry adds a new day.
+  const dayKeys = ['all', ...dayMap.keys()];
+  const dayKeyStr = dayKeys.join(',');
+  if (daySel.dataset.keys !== dayKeyStr) {
+    daySel.dataset.keys = dayKeyStr;
+    daySel.innerHTML = '<option value="all">All days</option>';
+    dayMap.forEach((label, key) => {
+      const o = document.createElement('option');
+      o.value = key; o.textContent = label;
+      daySel.appendChild(o);
+    });
+    // Restore selection if the previously selected day is still in the list
+    if (dayKeys.includes(currentDay)) daySel.value = currentDay;
+    else daySel.value = 'all';
+  }
+  const f = document.getElementById('log-filter').value;
+  const d = daySel.value;
+  let list = entries.filter(e => f==='all' || e.type===f);
+  if (d !== 'all') {
+    list = list.filter(e => {
+      const dt = new Date(e.timestamp);
+      const key = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+      return key === d;
+    });
+  }
   const paged=list.slice(0,logPage*LOG_PAGE);
   const hasMore=paged.length<list.length;
   el.innerHTML=(paged.length?paged.map(entryHTML).join(''):'<div class="empty"><div class="empty-ico">📋</div>No entries yet</div>')
@@ -1327,6 +1609,7 @@ function renderTrends(){
 function drawBar(id,labels,data,color){
   const cv=document.getElementById(id); if(!cv) return;
   const W=cv.offsetWidth||320, H=128;
+  if(!W) return; // canvas not yet in layout (e.g. iOS initial render) — skip to avoid 0-width draw
   cv.width=W; cv.height=H;
   const ctx=cv.getContext('2d');
   // Polyfill roundRect for older Safari/iOS
@@ -1377,10 +1660,10 @@ function exportPDF(){
     return `<tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${ICO[e.type]||''} ${xp(e.type)}</td><td>${d}</td><td>${xp(nameOf(e.by))}</td></tr>`;
   }).join('');
   const jRows=journals.map(j=>`<tr><td>${new Date(j.timestamp).toLocaleString()}</td><td>${xp(nameOf(j.by))}</td><td style="white-space:pre-wrap">${xp(j.text)}</td></tr>`).join('');
-  const html=`<!DOCTYPE html><html><head><title>Baby Boston Log</title>
+  const html=`<!DOCTYPE html><html><head><title>Baby Emmett Log</title>
   <style>body{font-family:sans-serif;padding:22px;color:#222;font-size:12.5px}h1{font-size:1.25rem;margin-bottom:4px}h2{font-size:.95rem;margin:22px 0 7px;color:#555;text-transform:uppercase;letter-spacing:.05em}p{color:#666;font-size:.75rem;margin-bottom:14px}table{width:100%;border-collapse:collapse;margin-bottom:10px}th{background:#f2f2f2;padding:6px 8px;text-align:left;border-bottom:2px solid #ddd;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}td{padding:5px 8px;border-bottom:1px solid #eee;vertical-align:top}tr:nth-child(even)td{background:#fafafa}@media print{body{padding:10px}}</style>
   </head><body>
-  <h1>🌙 Baby Boston — Full Log</h1>
+  <h1>🌙 Baby Emmett — Full Log</h1>
   <p>Exported ${new Date().toLocaleString()} · ${sorted.length} activity entries · ${journals.length} journal entries</p>
   <h2>Activity Log</h2>
   <table><thead><tr><th>Time</th><th>Type</th><th>Details</th><th>By</th></tr></thead><tbody>${eRows||'<tr><td colspan="4">No entries yet</td></tr>'}</tbody></table>
@@ -1393,7 +1676,7 @@ function exportPDF(){
     const blob=new Blob([html],{type:'text/html'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download='baby-boston-log-'+new Date().toISOString().slice(0,10)+'.html';
+    a.download='baby-emmett-log-'+new Date().toISOString().slice(0,10)+'.html';
     a.click(); URL.revokeObjectURL(a.href);
     toast('Log downloaded — open in browser to print');
   }
@@ -1414,7 +1697,7 @@ function exportJSON(){
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'baby-boston-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.download = 'baby-emmett-backup-' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
   toast('Backup downloaded ✓');
@@ -1429,7 +1712,15 @@ function importJSON(input){
       const data = JSON.parse(e.target.result);
       // Basic schema validation
       if(!data.version || !Array.isArray(data.entries) || !Array.isArray(data.journals)){
-        toast('⚠️ Invalid backup file — not a Baby Boston export');
+        toast('⚠️ Invalid backup file — not a Baby Emmett export');
+        return;
+      }
+      // Validate entry shape: every entry must have a string id and numeric timestamp.
+      // Corrupt or tampered backups with wrong types would cause silent rendering bugs.
+      const badEntry = data.entries.find(e => typeof e.id !== 'string' || typeof e.timestamp !== 'number');
+      const badJournal = data.journals.find(j => typeof j.id !== 'string' || typeof j.timestamp !== 'number');
+      if (badEntry || badJournal) {
+        toast('⚠️ Backup has corrupted entries (bad id or timestamp) — import cancelled');
         return;
       }
       showConfirm('Replace ALL data with this backup? This cannot be undone.', () => {
@@ -1458,7 +1749,7 @@ function importJSON(input){
         }
         refreshDash(); renderLog(); renderMeds(); renderJournal();
         toast('✓ Backup restored — ' + entries.length + ' entries, ' + journals.length + ' journal entries');
-      });
+      }, 'Restore');
     } catch(err) {
       toast('⚠️ Could not read file — check it is a valid JSON backup');
     }
@@ -1466,6 +1757,160 @@ function importJSON(input){
     input.value = '';
   };
   reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════
+// EDIT ENTRY
+// ═══════════════════════════════════════════════════════
+function openEdit(id) {
+  const e = entries.find(x => x.id === id); if(!e) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-fields').innerHTML = buildEditFields(e);
+  openModal('edit');
+}
+
+function edFeedToggle() {
+  const t = document.querySelector('#ed-c-feedtype .chip.on');
+  const isBreast = t && t.dataset.val === 'breast';
+  const bf = document.getElementById('ed-breast-fields');
+  const bo = document.getElementById('ed-bottle-fields');
+  if(bf) bf.style.display = isBreast ? 'block' : 'none';
+  if(bo) bo.style.display = isBreast ? 'none'  : 'block';
+}
+
+function buildEditFields(e) {
+  // Always show a time field, then type-specific fields
+  const ts = new Date(e.timestamp);
+  const _p = n => String(n).padStart(2,'0');
+  const localDT = ts.getFullYear()+'-'+_p(ts.getMonth()+1)+'-'+_p(ts.getDate())+'T'+_p(ts.getHours())+':'+_p(ts.getMinutes());
+  let html = `<div class="fg"><label class="fl">Time</label><input class="fi" type="datetime-local" id="ed-time" value="${localDT}"></div>`;
+  switch(e.type) {
+    case 'feed': {
+      const isBreast = e.feedType !== 'bottle';
+      html += `<div class="fg"><label class="fl">Feed Type</label>
+        <div class="chips" id="ed-c-feedtype">
+          <button class="chip ${isBreast?'on':''}" role="radio" aria-checked="${isBreast}" data-val="breast" onclick="cSingle(this,'ed-c-feedtype');edFeedToggle()">Breastfeeding</button>
+          <button class="chip ${!isBreast?'on':''}" role="radio" aria-checked="${!isBreast}" data-val="bottle" onclick="cSingle(this,'ed-c-feedtype');edFeedToggle()">Bottle</button>
+        </div></div>`;
+      html += `<div id="ed-breast-fields" style="display:${isBreast?'block':'none'}">
+        <div class="r2">
+          <div class="fg"><label class="fl">Left (min)</label><input class="fi" type="number" id="ed-left" inputmode="numeric" value="${e.leftDuration||0}" min="0"></div>
+          <div class="fg"><label class="fl">Right (min)</label><input class="fi" type="number" id="ed-right" inputmode="numeric" value="${e.rightDuration||0}" min="0"></div>
+        </div></div>`;
+      html += `<div id="ed-bottle-fields" style="display:${!isBreast?'block':'none'}">
+        <div class="fg"><label class="fl">Amount (oz)</label><input class="fi" type="number" id="ed-oz" inputmode="decimal" value="${e.bottleAmount||0}" step="0.5" min="0"></div>
+        </div>`;
+      break;
+    }
+    case 'diaper': {
+      const isWet   = (e.diaperTypes||[]).includes('wet');
+      const isDirty = (e.diaperTypes||[]).includes('dirty');
+      html += `<div class="fg"><label class="fl">Type</label>
+        <div class="chips" id="ed-c-diaper">
+          <button class="chip ${isWet?'on':''}" role="checkbox" aria-checked="${isWet}" data-val="wet" onclick="cMulti(this)">Wet</button>
+          <button class="chip ${isDirty?'on':''}" role="checkbox" aria-checked="${isDirty}" data-val="dirty" onclick="cMulti(this)">Dirty</button>
+        </div></div>`;
+      html += `<div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ed-notes">${esc(e.notes||'')}</textarea></div>`;
+      break;
+    }
+    case 'sleep': {
+      const endTs = new Date(e.sleepEnd||e.timestamp);
+      const endDT = endTs.getFullYear()+'-'+_p(endTs.getMonth()+1)+'-'+_p(endTs.getDate())+'T'+_p(endTs.getHours())+':'+_p(endTs.getMinutes());
+      html += `<div class="fg"><label class="fl">End Time</label><input class="fi" type="datetime-local" id="ed-end" value="${endDT}"></div>`;
+      break;
+    }
+    case 'meltdown':
+      html += `<div class="fg"><label class="fl">Time to Calm (min)</label><input class="fi" type="number" id="ed-dur" inputmode="numeric" value="${e.durationMin||0}" min="0"></div>`;
+      html += `<div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ed-notes">${esc(e.notes||'')}</textarea></div>`;
+      break;
+    case 'mood': {
+      const moods = [{val:'happy',ico:'😄'},{val:'calm',ico:'😌'},{val:'fussy',ico:'😤'},{val:'crying',ico:'😢'}];
+      html += `<div class="fg"><label class="fl">Mood</label><div class="mood-row" id="ed-mood-row">`
+        + moods.map(m=>`<button class="mb${e.mood===m.val?' on':''}" data-val="${m.val}" onclick="pickMood(this)" aria-pressed="${e.mood===m.val}">${m.ico}<div class="mb-lbl">${m.val.charAt(0).toUpperCase()+m.val.slice(1)}</div></button>`).join('')
+        + `</div></div>`;
+      html += `<div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ed-notes">${esc(e.notes||'')}</textarea></div>`;
+      break;
+    }
+    case 'tummy':
+      html += `<div class="fg"><label class="fl">Duration (min)</label><input class="fi" type="number" id="ed-dur" inputmode="numeric" value="${e.durationMin||0}" min="0"></div>`;
+      break;
+    case 'appointment':
+      html += `<div class="fg"><label class="fl">Doctor / Type</label><input class="fi" type="text" id="ed-aptype" value="${esc(e.apptType||'')}"></div>`;
+      html += `<div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ed-notes">${esc(e.notes||'')}</textarea></div>`;
+      html += `<div class="fg"><label class="fl">Outcomes</label><textarea class="fta" id="ed-outcomes">${esc(e.outcomes||'')}</textarea></div>`;
+      break;
+    case 'medication':
+      html += `<div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ed-notes">${esc(e.notes||'')}</textarea></div>`;
+      break;
+    case 'weight':
+      html += `<div class="r2">
+        <div class="fg"><label class="fl">Weight (lbs)</label><input class="fi" type="number" id="ed-lbs" inputmode="decimal" step="0.1" value="${e.lbs||0}" min="0"></div>
+        <div class="fg"><label class="fl">Weight (oz)</label><input class="fi"  type="number" id="ed-oz"  inputmode="numeric" value="${e.oz||0}"  min="0" max="15"></div>
+      </div>
+      <div class="r2">
+        <div class="fg"><label class="fl">Length (in)</label><input class="fi" type="number" id="ed-len" inputmode="decimal" step="0.1" value="${e.length||0}" min="0"></div>
+        <div class="fg"><label class="fl">Head Circ (in)</label><input class="fi" type="number" id="ed-head" inputmode="decimal" step="0.1" value="${e.head||0}" min="0"></div>
+      </div>`;
+      break;
+  }
+  return html;
+}
+
+function submitEdit() {
+  const id = document.getElementById('edit-id').value;
+  const idx = entries.findIndex(x => x.id === id); if(idx<0) return;
+  const e = {...entries[idx]};
+  const newTs = parseLocal('ed-time');
+  e.timestamp = newTs;
+  const g = id => { const el=document.getElementById(id); return el?el.value:null; };
+  switch(e.type) {
+    case 'feed': {
+      const ft = document.querySelector('#ed-c-feedtype .chip.on');
+      e.feedType = ft ? ft.dataset.val : e.feedType;
+      if(e.feedType === 'breast'){
+        e.leftDuration  = Math.max(0, parseInt(g('ed-left'))||0);
+        e.rightDuration = Math.max(0, parseInt(g('ed-right'))||0);
+      } else {
+        e.bottleAmount = Math.max(0, parseFloat(g('ed-oz'))||0);
+      }
+      break;
+    }
+    case 'diaper': {
+      const dc = document.getElementById('ed-c-diaper');
+      if (dc) e.diaperTypes = [...dc.querySelectorAll('.chip.on')].map(c=>c.dataset.val);
+      e.notes = (g('ed-notes')||'').trim();
+      break;
+    }
+    case 'sleep': {
+      const endEl = document.getElementById('ed-end');
+      if (endEl) {
+        const end = new Date(endEl.value).getTime();
+        if (end > newTs) {
+          e.sleepEnd = end;
+          e.durationMin = Math.round((end - newTs) / 60000);
+          e.sleepStart = newTs;
+        } else {
+          toast('⚠️ End time must be after start time — sleep not saved');
+          return; // bail out entirely so nothing is half-updated
+        }
+      } else {
+        e.sleepStart = newTs; // no end field shown (shouldn't happen)
+      }
+      break;
+    }
+    case 'meltdown':    e.durationMin=Math.max(0,parseInt(g('ed-dur'))||0); e.notes=(g('ed-notes')||'').trim(); break;
+    case 'mood': { const mp=document.querySelector('#ed-mood-row .mb.on'); if(mp) e.mood=mp.dataset.val; e.notes=(g('ed-notes')||'').trim(); break; }
+    case 'tummy':       e.durationMin=Math.max(0,parseInt(g('ed-dur'))||0); break;
+    case 'appointment': e.apptType=(g('ed-aptype')||'').trim(); e.notes=(g('ed-notes')||'').trim(); e.outcomes=(g('ed-outcomes')||'').trim(); break;
+    case 'medication':  e.notes=(g('ed-notes')||'').trim(); break;
+    case 'weight':      e.lbs=parseFloat(g('ed-lbs'))||0; e.oz=parseInt(g('ed-oz'))||0; e.length=parseFloat(g('ed-len'))||0; e.head=parseFloat(g('ed-head'))||0; break;
+  }
+  entries[idx] = e;
+  entries.sort((a,b)=>b.timestamp-a.timestamp);
+  saveAll();
+  fbPush('entries', e.id, e);
+  refreshDash(); renderLog();
+  closeModal(); toast('Entry updated ✓');
 }
 
 // ═══════════════════════════════════════════════════════
