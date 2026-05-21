@@ -267,6 +267,24 @@ body.theme-mom .nav {
         <div class="sum-item"><div class="sum-val" id="s-sleep">0m</div><div class="sum-sub">😴 Sleep</div></div>
         <div class="sum-item"><div class="sum-val" id="s-tummy">0m</div><div class="sum-sub">⏱️ Tummy</div></div>
       </div>
+      <!-- Breast totals row — shown only when there's at least one breast feed today -->
+      <div id="s-breast-row" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr)">
+        <div style="font-size:.65rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nursing Today</div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;background:var(--s2);border-radius:10px;padding:8px 10px;text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--tx);font-family:'DM Serif Display',serif" id="s-left-total">0m</div>
+            <div style="font-size:.62rem;color:var(--tx3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">◀ Left</div>
+          </div>
+          <div style="flex:1;background:var(--s2);border-radius:10px;padding:8px 10px;text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--tx);font-family:'DM Serif Display',serif" id="s-right-total">0m</div>
+            <div style="font-size:.62rem;color:var(--tx3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">Right ▶</div>
+          </div>
+          <div style="flex:1;background:var(--s2);border-radius:10px;padding:8px 10px;text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--gold);font-family:'DM Serif Display',serif" id="s-breast-total">0m</div>
+            <div style="font-size:.62rem;color:var(--tx3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">Total</div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="qg">
       <button class="qc feed" onclick="openModal('feed')" aria-label="Log a feed">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div id="d-feed-side" style="font-size:.72rem;color:var(--gold);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-feed-who">—</div>   <div class="qc-btn">+ Log Feed</div></button>
@@ -1037,6 +1055,22 @@ function refreshDash() {
   document.getElementById('s-sleep').textContent=sh>0?sh+'h'+(sm?sm+'m':''):sleepM+'m';
   document.getElementById('s-tummy').textContent=tummyM+'m';
 
+  // Breast totals for the selected day
+  const breastFeeds = dayEntries.filter(e => e.type==='feed' && e.feedType==='breast');
+  const leftTotal   = breastFeeds.reduce((a,e) => a + (e.leftDuration||0), 0);
+  const rightTotal  = breastFeeds.reduce((a,e) => a + (e.rightDuration||0), 0);
+  const breastRow   = document.getElementById('s-breast-row');
+  if (breastRow) {
+    if (breastFeeds.length > 0) {
+      document.getElementById('s-left-total').textContent  = fmtMin(leftTotal);
+      document.getElementById('s-right-total').textContent = fmtMin(rightTotal);
+      document.getElementById('s-breast-total').textContent = fmtMin(leftTotal + rightTotal);
+      breastRow.style.display = 'block';
+    } else {
+      breastRow.style.display = 'none';
+    }
+  }
+
   // Cards: always most-recent-ever — these are live status, not historical summaries
   ['feed','diaper','sleep','tummy'].forEach(t=>{
     const last=entries.find(e=>e.type===t);
@@ -1257,6 +1291,8 @@ function endSleepNow() {
   if (!sleepStart) { closeModal(); return; }
   const end = Date.now();
   const dur = Math.round((end - sleepStart) / 60000);
+  // Clear modal interval explicitly — don't rely on addEntry→closeModal call chain
+  clearInterval(sleepModalIv); sleepModalIv = null;
   if (dur < 1) { toast('⚠️ Sleep was less than 1 minute — not logged'); sleepStart=null; localStorage.removeItem('bb_sl'); clearInterval(sleepIv); updateSleepLive(); closeModal(); return; }
   addEntry('sleep',{sleepStart,sleepEnd:end,durationMin:dur,timestamp:sleepStart});
   sleepStart = null;
@@ -1397,6 +1433,7 @@ function deleteJournal(id){
 function tStart(){
   tSide=chipVals('c-side').includes('left')?'left':'right';
   tTs=Date.now();
+  actualFeedStart = tTs; // record precise start for accurate f-time on stop
   document.getElementById('t-start').disabled=true;
   document.getElementById('t-stop').disabled=false;
   document.getElementById('t-switch').disabled=false;
@@ -1415,6 +1452,9 @@ function tSwitch(){
   document.getElementById('t-side').textContent='🤱 '+cap(tSide)+' side';
   toast('Switched to '+tSide+' side');
 }
+// Stores the precise ms timestamp when the timer actually started (set in tStart)
+let actualFeedStart = null;
+
 function tStop(){
   if(!tTs) return;
   const dur=Date.now()-tTs;
@@ -1429,14 +1469,25 @@ function tStop(){
   document.getElementById('t-stop').disabled=true;
   document.getElementById('t-switch').disabled=true;
   document.getElementById('t-foot').textContent='';
-  // Back-calculate start time from actual timer duration — oninput doesn't fire on
-  // programmatic value assignment so we call updateFeedTime() explicitly here.
-  // Reset fTimeEdited first so the timer always wins over a stale manual edit.
-  fTimeEdited = false;
-  updateFeedTime();
+  // Set f-time directly from the actual timer start — more accurate than back-calculating
+  // from rounded minutes (avoids up to 30s rounding error per side).
+  if (actualFeedStart) {
+    const d = new Date(actualFeedStart);
+    const pad = n => String(n).padStart(2,'0');
+    const localStr = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+    document.getElementById('f-time').value = localStr;
+    const hint = document.getElementById('f-time-hint');
+    const totalMin = lm + rm;
+    if (hint) hint.textContent = 'Start time set to ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' (' + totalMin + ' min ago) — edit above to adjust';
+    fTimeEdited = false; // timer always wins over prior manual edit
+  } else {
+    // Fallback: back-calculate from rounded minutes if actualFeedStart unavailable
+    fTimeEdited = false;
+    updateFeedTime();
+  }
 }
 function tReset(){
-  clearInterval(tIv); clearTimeout(tTo); tIv=null; tTo=null; tTs=null; tSide=null; tL=0; tR=0;
+  clearInterval(tIv); clearTimeout(tTo); tIv=null; tTo=null; tTs=null; tSide=null; tL=0; tR=0; actualFeedStart=null;
   const d=document.getElementById('t-disp');
   if(d){d.textContent='0:00';document.getElementById('t-side').textContent='';document.getElementById('t-foot').textContent='';document.getElementById('t-start').disabled=false;document.getElementById('t-stop').disabled=true;document.getElementById('t-switch').disabled=true;}
 }
@@ -1608,8 +1659,8 @@ function renderTrends(){
 
 function drawBar(id,labels,data,color){
   const cv=document.getElementById(id); if(!cv) return;
-  const W=cv.offsetWidth||320, H=128;
-  if(!W) return; // canvas not yet in layout (e.g. iOS initial render) — skip to avoid 0-width draw
+  const W=cv.offsetWidth, H=128;
+  if(!W) return; // canvas not yet in layout (e.g. iOS initial render) — renderTrends() will retry on next navTo
   cv.width=W; cv.height=H;
   const ctx=cv.getContext('2d');
   // Polyfill roundRect for older Safari/iOS
@@ -1783,7 +1834,15 @@ function buildEditFields(e) {
   const ts = new Date(e.timestamp);
   const _p = n => String(n).padStart(2,'0');
   const localDT = ts.getFullYear()+'-'+_p(ts.getMonth()+1)+'-'+_p(ts.getDate())+'T'+_p(ts.getHours())+':'+_p(ts.getMinutes());
-  let html = `<div class="fg"><label class="fl">Time</label><input class="fi" type="datetime-local" id="ed-time" value="${localDT}"></div>`;
+  // Logged-by selector — always shown regardless of entry type
+  const isMom = (e.by === 'Mom');
+  const isDad = (e.by === 'Dad');
+  let html = `<div class="fg"><label class="fl">Logged By</label>
+    <div class="chips" id="ed-c-by">
+      <button class="chip ${isMom?'on':''}" role="radio" aria-checked="${isMom}" data-val="Mom" onclick="cSingle(this,'ed-c-by')">☀️ Mom</button>
+      <button class="chip ${isDad?'on':''}" role="radio" aria-checked="${isDad}" data-val="Dad" onclick="cSingle(this,'ed-c-by')">🌙 Dad</button>
+    </div></div>`;
+  html += `<div class="fg"><label class="fl">Time</label><input class="fi" type="datetime-local" id="ed-time" value="${localDT}"></div>`;
   switch(e.type) {
     case 'feed': {
       const isBreast = e.feedType !== 'bottle';
@@ -1905,6 +1964,9 @@ function submitEdit() {
     case 'medication':  e.notes=(g('ed-notes')||'').trim(); break;
     case 'weight':      e.lbs=parseFloat(g('ed-lbs'))||0; e.oz=parseInt(g('ed-oz'))||0; e.length=parseFloat(g('ed-len'))||0; e.head=parseFloat(g('ed-head'))||0; break;
   }
+  // Update logged-by from chip selection
+  const byChip = document.querySelector('#ed-c-by .chip.on');
+  if (byChip) e.by = byChip.dataset.val;
   entries[idx] = e;
   entries.sort((a,b)=>b.timestamp-a.timestamp);
   saveAll();
@@ -1916,6 +1978,7 @@ function submitEdit() {
 // ═══════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════
+function fmtMin(m){return m>=60?Math.floor(m/60)+'h '+(m%60)+'m':m+'m';}
 function fmtDate(ts,style){
   if(!ts) return '—';
   return style==='long'
