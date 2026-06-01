@@ -287,7 +287,7 @@ body.theme-mom .nav {
       </div>
     </div>
     <div class="qg">
-      <button class="qc feed" onclick="openModal('feed')" aria-label="Log a feed">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div id="d-feed-side" style="font-size:.72rem;color:var(--gold);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-feed-who">—</div>   <div class="qc-btn">+ Log Feed</div></button>
+      <button class="qc feed" onclick="openModal('feed')" aria-label="Log a feed">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div id="d-feed-side" style="font-size:.72rem;color:var(--gold);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-feed-who">—</div>   <button id="d-feed-resume" onclick="event.stopPropagation();openModal('feed')" style="display:none;margin-top:4px;width:100%;background:var(--green);color:#0a0a0f;border:none;border-radius:6px;padding:4px 0;font-size:.72rem;font-weight:700;cursor:pointer">↩ Resume Session</button><div class="qc-btn">+ Log Feed</div></button>
       <button class="qc diaper" onclick="openModal('diaper')" aria-label="Log a diaper change"> <div class="qc-ico">🧷</div><div class="qc-lbl">Last Diaper</div> <div class="qc-el" id="d-diaper-el">—</div> <div id="d-diaper-type" style="font-size:.72rem;color:var(--blue);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-diaper-who">—</div> <div class="qc-btn">+ Log Diaper</div></button>
       <button class="qc sleep" onclick="openModal('sleep')" aria-label="Log sleep">  <div class="qc-ico">😴</div><div class="qc-lbl">Sleep</div>       <div class="qc-el" id="d-sleep-el">—</div>   <div id="d-sleep-live" style="font-size:.72rem;color:var(--green);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-sleep-who">—</div>   <div class="qc-btn" id="d-sleep-btn">+ Log Sleep</div></button>
       <button class="qc tummy" onclick="openModal('tummy')" aria-label="Log tummy time"><div class="qc-ico">⏱️</div><div class="qc-lbl">Tummy Time</div><div class="qc-el" id="d-tummy-el">—</div><div class="qc-who" id="d-tummy-who">—</div><div class="qc-btn">+ Log Tummy</div></button>
@@ -350,6 +350,8 @@ body.theme-mom .nav {
     <div class="cw"><div class="cl">Daily Feeds</div><canvas id="c-feeds" height="128"></canvas></div>
     <div class="cw"><div class="cl">Daily Diapers</div><canvas id="c-diapers" height="128"></canvas></div>
     <div class="cw"><div class="cl">Daily Sleep (hours)</div><canvas id="c-sleep" height="128"></canvas></div>
+    <div class="cw"><div class="cl">Weight (lbs · oz)</div><canvas id="c-weight" height="128"></canvas></div>
+    <div class="cw"><div class="cl">Length (inches)</div><canvas id="c-length" height="128"></canvas></div>
   </div>
 
   <!-- MORE -->
@@ -448,8 +450,8 @@ body.theme-mom .nav {
       <div class="fg">
         <label class="fl">Side(s)</label>
         <div class="chips" id="c-side">
-          <button class="chip on" role="checkbox" aria-checked="true"  data-val="left"  onclick="cMulti(this)">Left</button>
-          <button class="chip"    role="checkbox" aria-checked="false" data-val="right" onclick="cMulti(this)">Right</button>
+          <button class="chip on" role="checkbox" aria-checked="true"  data-val="left"  onclick="cMulti(this);focusSideField('left')">Left</button>
+          <button class="chip"    role="checkbox" aria-checked="false" data-val="right" onclick="cMulti(this);focusSideField('right')">Right</button>
         </div>
       </div>
       <div class="r2">
@@ -641,7 +643,10 @@ const T_MAX = 7200000; // 2h
 let sleepModalIv = null; // fast interval while sleep modal is open
 
 // Sleep tracking state
-let sleepStart = null;  // ms timestamp when baby fell asleep, null if not sleeping
+let sleepStart = null;
+
+// Feed resume state — id of the breast feed entry available to continue (< 90 min ago)
+let resumeFeedId = null;  // id of breast feed entry available to resume (< 90 min, one side only)
 let sleepIv = null;     // interval for sleep timer display
 
 // ═══════════════════════════════════════════════════════
@@ -822,8 +827,11 @@ function connectToDb(cfg, elS, elB) {
     firebase.initializeApp(cfg);
     fbRef = firebase.database().ref('babyboston');
     fbRef.child('entries').on('value', snap => {
+      // Suppress Firebase overwrites briefly after a local edit (submitEdit/submitFeed-resume)
+      // to prevent the stale cloud value from reverting what the user just changed.
+      if (Date.now() < _suppressFbUntil) return;
       const v = snap.val();
-      entries = v ? Object.values(v).sort((a,b) => b.timestamp - a.timestamp) : [];
+      entries = v ? Object.values(v).sort((a,b) => b.timestamp - a.timestamp || b.id.localeCompare(a.id)) : [];
       saveAll(); refreshDash(); renderLog();
     });
     fbRef.child('medications').on('value', snap => {
@@ -1003,6 +1011,7 @@ function parseLocal(id) {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════
 let _dashPrint = ''; // fingerprint of last rendered state
+let _suppressFbUntil = 0; // timestamp: ignore Firebase entry updates until after this time (post-edit grace period)
 let dashDate = null;  // null = today; 'YYYY-MM-DD' string = browsing a past day
 
 // Set the home screen date; null or empty resets to today
@@ -1032,7 +1041,7 @@ function refreshDash() {
   // Fingerprint — include dashDate so switching days always forces re-render
   const minuteNow  = Math.floor(Date.now()/60000);
   const dayEntries = entries.filter(e => e.timestamp >= dayStartMs && e.timestamp < dayEndMs);
-  const print = (dashDate||'today')+'|'+dayEntries.length+'|'+entries.slice(0,3).map(e=>e.id).join(',')+'|'+minuteNow+'|'+(sleepStart||0);
+  const print = (dashDate||'today')+'|'+dayEntries.length+'|'+entries.slice(0,5).map(e=>e.id).join(',')+'|'+minuteNow+'|'+(sleepStart||0);
   if (print === _dashPrint) return;
   _dashPrint = print;
 
@@ -1061,7 +1070,7 @@ function refreshDash() {
   const rightTotal  = breastFeeds.reduce((a,e) => a + (e.rightDuration||0), 0);
   const breastRow   = document.getElementById('s-breast-row');
   if (breastRow) {
-    if (breastFeeds.length > 0) {
+    if (breastFeeds.length > 0 && (leftTotal + rightTotal) > 0) {
       document.getElementById('s-left-total').textContent  = fmtMin(leftTotal);
       document.getElementById('s-right-total').textContent = fmtMin(rightTotal);
       document.getElementById('s-breast-total').textContent = fmtMin(leftTotal + rightTotal);
@@ -1102,6 +1111,30 @@ function refreshDash() {
     } else { sideEl.textContent = ''; }
   }
 
+  // Feed card: show Resume button if last breast feed was < 90 min ago and had only one side
+  const resumeBtn = document.getElementById('d-feed-resume');
+  if (resumeBtn) {
+    const lastFeed = entries.find(e => e.type === 'feed');
+    const RESUME_WINDOW = 90 * 60000; // 90 minutes
+    if (lastFeed && lastFeed.feedType === 'breast' &&
+        (Date.now() - lastFeed.timestamp) < RESUME_WINDOW) {
+      const hasL = (lastFeed.leftDuration || 0) > 0;
+      const hasR = (lastFeed.rightDuration || 0) > 0;
+      // Only offer resume if only one side was done (other side still needed)
+      if (hasL !== hasR) { // XOR — exactly one side done
+        resumeFeedId = lastFeed.id;
+        resumeBtn.style.display = 'block';
+        resumeBtn.textContent = '↩ Resume Session (' + (hasL ? 'add R' : 'add L') + ')';
+      } else {
+        resumeFeedId = null;
+        resumeBtn.style.display = 'none';
+      }
+    } else {
+      resumeFeedId = null;
+      resumeBtn.style.display = 'none';
+    }
+  }
+
   // Activity list — filtered to selected day, up to 20 entries
   const recentLbl = document.getElementById('recent-label');
   if (recentLbl) recentLbl.textContent = isToday ? 'Recent Activity' : 'Activity That Day';
@@ -1131,15 +1164,43 @@ function openModal(type) {
 function prepModal(type) {
   const now=nowLocal();
   if(type==='feed'){
-    fTimeEdited = false; // reset manual-edit flag for fresh modal
+    fTimeEdited = false;
     const fhint=document.getElementById('f-time-hint'); if(fhint) fhint.textContent='';
-    document.getElementById('f-time').value=now;
-    cSingleByVal('c-feedtype', S.feedType||'breast');
-    updateFeedFields();
-    // Reset side chips to Left only
-    document.querySelectorAll('#c-side .chip').forEach(c=>{const on=c.dataset.val==='left';c.classList.toggle('on',on);c.setAttribute('aria-checked',on?'true':'false');});
-    document.getElementById('f-left').value=''; document.getElementById('f-right').value=''; document.getElementById('f-oz').value='';
-    tReset();
+    if (resumeFeedId) {
+      // Resume mode: pre-fill from existing entry — do NOT reset fields after this block
+      const orig = entries.find(e => e.id === resumeFeedId);
+      if (orig) {
+        document.getElementById('m-feed').querySelector('.mt').textContent = '🍼 Continue Feed Session';
+        document.getElementById('f-left').value  = orig.leftDuration  || '';
+        document.getElementById('f-right').value = orig.rightDuration || '';
+        document.getElementById('f-oz').value    = '';
+        // Set time to original start — lock so updateFeedTime won't overwrite it
+        const d = new Date(orig.timestamp);
+        const pad = n => String(n).padStart(2,'0');
+        document.getElementById('f-time').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+        if (fhint) fhint.textContent = 'Continuing session started ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+        fTimeEdited = true; // lock time — use original start
+        // Keep feed type as breast, update side chips to reflect what's already done
+        cSingleByVal('c-feedtype', 'breast');
+        updateFeedFields();
+        const hasL = (orig.leftDuration||0) > 0;
+        const hasR = (orig.rightDuration||0) > 0;
+        document.querySelectorAll('#c-side .chip').forEach(c=>{
+          const on = (c.dataset.val==='left' && hasL) || (c.dataset.val==='right' && hasR);
+          c.classList.toggle('on',on); c.setAttribute('aria-checked',on?'true':'false');
+        });
+        tReset();
+      }
+    } else {
+      // Fresh feed — reset everything
+      document.getElementById('m-feed').querySelector('.mt').textContent = '🍼 Log Feed';
+      document.getElementById('f-time').value=now;
+      cSingleByVal('c-feedtype', S.feedType||'breast');
+      updateFeedFields();
+      document.querySelectorAll('#c-side .chip').forEach(c=>{const on=c.dataset.val==='left';c.classList.toggle('on',on);c.setAttribute('aria-checked',on?'true':'false');});
+      document.getElementById('f-left').value=''; document.getElementById('f-right').value=''; document.getElementById('f-oz').value='';
+      tReset();
+    }
   }
   if(type==='diaper'){
     document.getElementById('d-time').value=now;
@@ -1176,7 +1237,7 @@ function prepModal(type) {
   if(type==='med-log'){document.getElementById('ml2-time').value=now;document.getElementById('ml2-notes').value='';}
 }
 function closeModal() {
-  if(activeModal==='feed') tReset();
+  if(activeModal==='feed') { tReset(); document.getElementById('m-feed').querySelector('.mt').textContent='🍼 Log Feed'; resumeFeedId=null; }
   if(activeModal==='sleep') { clearInterval(sleepModalIv); sleepModalIv=null; }
   document.getElementById('overlay').classList.remove('on');
   document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
@@ -1207,16 +1268,26 @@ function updateFeedTime() {
   if (fTimeEdited) return; // respect manual edits
   const l = parseInt(document.getElementById('f-left').value) || 0;
   const r = parseInt(document.getElementById('f-right').value) || 0;
-  const total = l + r;
   const hint = document.getElementById('f-time-hint');
+  // Use only the minutes for selected sides — if right isn't checked yet,
+  // don't include right minutes in the start-time calculation
+  const leftOn  = document.querySelector('#c-side .chip[data-val="left"]')?.classList.contains('on');
+  const rightOn = document.querySelector('#c-side .chip[data-val="right"]')?.classList.contains('on');
+  const total = (leftOn ? l : 0) + (rightOn ? r : 0);
   if (total <= 0) { if(hint) hint.textContent = ''; return; }
-  // Calculate start = now - total minutes
   const startMs = Date.now() - total * 60000;
   const d = new Date(startMs);
   const pad = n => String(n).padStart(2,'0');
   const localStr = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
   document.getElementById('f-time').value = localStr;
   if(hint) hint.textContent = 'Start time set to ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' (' + total + ' min ago) — edit above to adjust';
+}
+
+// When a side chip is tapped, focus the matching minute input so the user
+// can type immediately without a second tap
+function focusSideField(side) {
+  const el = document.getElementById(side === 'left' ? 'f-left' : 'f-right');
+  if (el) { el.focus(); el.select(); }
 }
 
 function updateFeedFields(){const t=chipVal('c-feedtype');document.getElementById('breast-fields').style.display=t==='breast'?'block':'none';document.getElementById('bottle-fields').style.display=t==='bottle'?'block':'none';}
@@ -1231,7 +1302,7 @@ function addEntry(type, data, opts={}) {
   const entry = { id:uid(), type, by:who, ...data, timestamp:ts };
   entries.unshift(entry);
   // Re-sort so backdated entries land in the correct chronological position
-  entries.sort((a, b) => b.timestamp - a.timestamp);
+  entries.sort((a, b) => b.timestamp - a.timestamp || b.id.localeCompare(a.id));
   saveAll();
   fbPush('entries', entry.id, entry);
   refreshDash(); renderLog();
@@ -1248,10 +1319,31 @@ function submitFeed(){
   if(ft==='breast'){
     const ld=Math.max(0,parseInt(document.getElementById('f-left').value)||0);
     const rd=Math.max(0,parseInt(document.getElementById('f-right').value)||0);
+    // Resume mode: merge into the existing entry instead of creating a new one
+    if (resumeFeedId) {
+      const idx = entries.findIndex(e => e.id === resumeFeedId);
+      if (idx >= 0) {
+        const newSides = [...(ld>0?['left']:[]), ...(rd>0?['right']:[])];
+        entries[idx] = {...entries[idx],
+          leftDuration: ld, rightDuration: rd,
+          sides: newSides.length > 0 ? newSides : entries[idx].sides
+        };
+        entries.sort((a,b)=>b.timestamp-a.timestamp||b.id.localeCompare(a.id));
+        saveAll();
+        _suppressFbUntil = Date.now() + 5000; // prevent Firebase listener reverting the merge
+        fbPush('entries', entries[idx].id, entries[idx]);
+        resumeFeedId = null;
+        _dashPrint = '';
+        refreshDash(); renderLog();
+        closeModal(); toast('Feed session updated ✓');
+        return;
+      }
+    }
     addEntry('feed',{feedType:'breast',sides:chipVals('c-side'),leftDuration:ld,rightDuration:rd,timestamp:ts});
   } else {
     addEntry('feed',{feedType:'bottle',bottleAmount:Math.max(0,parseFloat(document.getElementById('f-oz').value)||0),timestamp:ts});
   }
+  resumeFeedId = null; // clear resume state after any feed save
 }
 function submitDiaper(){
   const ts=parseLocal('d-time');
@@ -1309,6 +1401,8 @@ function autoEndSleep(reason, endTs) {
   const end = (endTs && endTs > sleepStart) ? endTs : Date.now();
   const dur = Math.round((end - sleepStart) / 60000);
   if (dur >= 1) {
+    // silent:true skips the redundant refreshDash/renderLog — the calling
+    // submitFeed/submitDiaper will trigger its own render immediately after
     addEntry('sleep',{sleepStart,sleepEnd:end,durationMin:dur,timestamp:sleepStart},{silent:true});
     toast('😴 Sleep ended automatically (' + dur + ' min) — ' + reason + ' logged');
   }
@@ -1492,7 +1586,6 @@ function tReset(){
   if(d){d.textContent='0:00';document.getElementById('t-side').textContent='';document.getElementById('t-foot').textContent='';document.getElementById('t-start').disabled=false;document.getElementById('t-stop').disabled=true;document.getElementById('t-switch').disabled=true;}
 }
 function fmtMs(ms){const s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
-function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 
 // ═══════════════════════════════════════════════════════
 // JOURNAL
@@ -1527,8 +1620,10 @@ function entryHTML(e){
       if(e.feedType==='breast'){
         title='Breastfed';
         const parts=[];
-        if((e.sides||[]).includes('left')&&e.leftDuration)   parts.push('L '+e.leftDuration+'min');
-        if((e.sides||[]).includes('right')&&e.rightDuration) parts.push('R '+e.rightDuration+'min');
+        // Use durations as the source of truth — don't require `sides` array,
+        // which may be missing on older entries or entries saved before sides tracking was added
+        if(e.leftDuration  > 0) parts.push('L '+e.leftDuration+'min');
+        if(e.rightDuration > 0) parts.push('R '+e.rightDuration+'min');
         detail=parts.join(' · ')||'Duration not recorded';
       } else {title='Bottle Feed';detail=e.bottleAmount?e.bottleAmount+' oz':'';}
       break;
@@ -1585,7 +1680,11 @@ function renderLog(reset){
   }
   const f = document.getElementById('log-filter').value;
   const d = daySel.value;
-  let list = entries.filter(e => f==='all' || e.type===f);
+  // Re-sort defensively before rendering — ensures display order is always correct
+  // even if entries array was modified without an explicit sort somewhere
+  let list = entries
+    .filter(e => f==='all' || e.type===f)
+    .sort((a,b) => b.timestamp - a.timestamp || b.id.localeCompare(a.id));
   if (d !== 'all') {
     list = list.filter(e => {
       const dt = new Date(e.timestamp);
@@ -1650,10 +1749,26 @@ function renderTrends(){
   const diaperData= buckets.map(b=>b.diapers);
   const sleepData = buckets.map(b=>Math.round(b.sleepMin/60*10)/10);
 
+  // Weight and length: all-time data points sorted oldest first for line charts
+  const weightEntries = [...entries].filter(e => e.type==='weight' && (e.lbs||e.oz||e.length))
+    .sort((a,b) => a.timestamp - b.timestamp);
+  const weightPoints = weightEntries
+    .filter(e => e.lbs !== undefined || e.oz !== undefined)
+    .map(e => ({
+      x: e.timestamp,
+      y: Math.round(((e.lbs||0) + (e.oz||0)/16) * 100) / 100, // total lbs as decimal
+      label: (e.lbs||0) + 'lb ' + (e.oz||0) + 'oz'
+    }));
+  const lengthPoints = weightEntries
+    .filter(e => e.length > 0)
+    .map(e => ({x: e.timestamp, y: e.length, label: e.length + '"'}));
+
   requestAnimationFrame(()=>{
     drawBar('c-feeds',   labels, feedData,   '#c9a96e');
     drawBar('c-diapers', labels, diaperData, '#7c9ec9');
     drawBar('c-sleep',   labels, sleepData,  '#9ec99e');
+    drawLine('c-weight', weightPoints, '#c9a96e');
+    drawLine('c-length', lengthPoints, '#c97ca8');
   });
 }
 
@@ -1688,17 +1803,94 @@ function drawBar(id,labels,data,color){
   });
 }
 
+function drawLine(id, points, color) {
+  const cv = document.getElementById(id); if (!cv) return;
+  const W = cv.offsetWidth, H = 128;
+  if (!W) return;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  if (points.length === 0) {
+    // No data yet — show placeholder message
+    ctx.font = '11px DM Sans,sans-serif';
+    ctx.fillStyle = '#5a5a78';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', W/2, H/2);
+    return;
+  }
+  if (points.length === 1) {
+    // Single point — just draw a dot and label
+    const p = { t:16, b:26, l:20, r:10 };
+    const x = W / 2, y = (H - p.t - p.b) / 2 + p.t;
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.font = '9.5px DM Sans,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#9898b0'; ctx.fillText(points[0].label, x, y - 8);
+    const d = new Date(points[0].x);
+    ctx.fillStyle = '#5a5a78'; ctx.fillText(d.toLocaleDateString('en-US',{month:'short',day:'numeric'}), x, H-7);
+    return;
+  }
+  const p = { t:18, b:26, l:20, r:10 };
+  const minY = Math.min(...points.map(p=>p.y));
+  const maxY = Math.max(...points.map(p=>p.y));
+  const rangeY = maxY - minY || 1;
+  // Map a data point to canvas coords
+  const cx = i => p.l + (i / (points.length - 1)) * (W - p.l - p.r);
+  const cy = v => p.t + (1 - (v - minY) / rangeY) * (H - p.t - p.b);
+  // Gradient fill under line
+  const grad = ctx.createLinearGradient(0, p.t, 0, H - p.b);
+  grad.addColorStop(0, color + '44');
+  grad.addColorStop(1, color + '08');
+  ctx.beginPath();
+  ctx.moveTo(cx(0), H - p.b);
+  points.forEach((pt, i) => ctx.lineTo(cx(i), cy(pt.y)));
+  ctx.lineTo(cx(points.length - 1), H - p.b);
+  ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(cx(0), cy(points[0].y));
+  points.forEach((pt, i) => { if(i>0) ctx.lineTo(cx(i), cy(pt.y)); });
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+  ctx.stroke();
+  // Dots, labels, date labels
+  ctx.font = '9.5px DM Sans,sans-serif'; ctx.textAlign = 'center';
+  points.forEach((pt, i) => {
+    const x = cx(i), y = cy(pt.y);
+    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    // Value label above dot (only if not too crowded — show first, last, and every other)
+    if (points.length <= 6 || i === 0 || i === points.length-1 || i % 2 === 0) {
+      ctx.fillStyle = '#9898b0'; ctx.fillText(pt.label, x, y - 7);
+    }
+    // Date label at bottom (only first and last to avoid overlap)
+    if (i === 0 || i === points.length - 1) {
+      const d = new Date(pt.x);
+      ctx.fillStyle = '#5a5a78';
+      ctx.fillText(d.toLocaleDateString('en-US',{month:'short',day:'numeric'}), x, H - 7);
+    }
+  });
+}
+
 // ═══════════════════════════════════════════════════════
 // PDF EXPORT (includes journal)
 // ═══════════════════════════════════════════════════════
 function exportPDF(){
   // HTML escape for print window (different from esc() which uses &quot;)
   const xp = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
-  const sorted=[...entries].sort((a,b)=>b.timestamp-a.timestamp);
+  const sorted=[...entries].sort((a,b)=>b.timestamp-a.timestamp||b.id.localeCompare(a.id));
   const eRows=sorted.map(e=>{
     let d='';
     switch(e.type){
-      case 'feed': d=e.feedType==='breast'?`Breastfed – L:${e.leftDuration||0}min R:${e.rightDuration||0}min`:`Bottle – ${e.bottleAmount||0}oz`; break;
+      case 'feed': {
+        if(e.feedType==='breast'){
+          const pp=[];
+          if((e.leftDuration||0)>0)  pp.push('L:'+e.leftDuration+'min');
+          if((e.rightDuration||0)>0) pp.push('R:'+e.rightDuration+'min');
+          d='Breastfed'+(pp.length?' – '+pp.join(' '):' – duration not recorded');
+        } else { d='Bottle – '+(e.bottleAmount||0)+'oz'; }
+        break;
+      }
       case 'diaper': d=xp((e.diaperTypes||[]).join('+'))+(e.notes?' | '+xp(e.notes):''); break;
       case 'sleep': d=fmtDur(e.durationMin||0); break;
       case 'mood': d=xp(cap(e.mood||''))+(e.notes?' | '+xp(e.notes):''); break;
@@ -1768,10 +1960,11 @@ function importJSON(input){
       }
       // Validate entry shape: every entry must have a string id and numeric timestamp.
       // Corrupt or tampered backups with wrong types would cause silent rendering bugs.
-      const badEntry = data.entries.find(e => typeof e.id !== 'string' || typeof e.timestamp !== 'number');
-      const badJournal = data.journals.find(j => typeof j.id !== 'string' || typeof j.timestamp !== 'number');
-      if (badEntry || badJournal) {
-        toast('⚠️ Backup has corrupted entries (bad id or timestamp) — import cancelled');
+      const badEntry   = data.entries.find(e => typeof e.id !== 'string' || typeof e.timestamp !== 'number');
+      const badJournal  = data.journals.find(j => typeof j.id !== 'string' || typeof j.timestamp !== 'number');
+      const badMed      = (data.medications||[]).find(m => typeof m.id !== 'string' || typeof m.name !== 'string');
+      if (badEntry || badJournal || badMed) {
+        toast('⚠️ Backup has corrupted data (bad id, timestamp, or medication) — import cancelled');
         return;
       }
       showConfirm('Replace ALL data with this backup? This cannot be undone.', () => {
@@ -1784,8 +1977,8 @@ function importJSON(input){
           applySettings();
         }
         // Re-sort entries and journals (backup may be from different sort order)
-        entries.sort((a,b)=>b.timestamp-a.timestamp);
-        journals.sort((a,b)=>b.timestamp-a.timestamp);
+        entries.sort((a,b)=>b.timestamp-a.timestamp||b.id.localeCompare(a.id));
+        journals.sort((a,b)=>b.timestamp-a.timestamp||b.id.localeCompare(a.id));
         saveAll();
         // Push everything to Firebase so the cloud matches the restored backup.
         // Without this, the next Firebase sync event would overwrite the restore
@@ -1873,7 +2066,7 @@ function buildEditFields(e) {
       break;
     }
     case 'sleep': {
-      const endTs = new Date(e.sleepEnd||e.timestamp);
+      const endTs = new Date(e.sleepEnd || (e.timestamp + (e.durationMin||0)*60000) || e.timestamp);
       const endDT = endTs.getFullYear()+'-'+_p(endTs.getMonth()+1)+'-'+_p(endTs.getDate())+'T'+_p(endTs.getHours())+':'+_p(endTs.getMinutes());
       html += `<div class="fg"><label class="fl">End Time</label><input class="fi" type="datetime-local" id="ed-end" value="${endDT}"></div>`;
       break;
@@ -1968,8 +2161,9 @@ function submitEdit() {
   const byChip = document.querySelector('#ed-c-by .chip.on');
   if (byChip) e.by = byChip.dataset.val;
   entries[idx] = e;
-  entries.sort((a,b)=>b.timestamp-a.timestamp);
+  entries.sort((a,b)=>b.timestamp-a.timestamp||b.id.localeCompare(a.id));
   saveAll();
+  _suppressFbUntil = Date.now() + 5000; // 5s grace: prevent Firebase listener from reverting this edit
   fbPush('entries', e.id, e);
   refreshDash(); renderLog();
   closeModal(); toast('Entry updated ✓');
@@ -1979,6 +2173,7 @@ function submitEdit() {
 // HELPERS
 // ═══════════════════════════════════════════════════════
 function fmtMin(m){return m>=60?Math.floor(m/60)+'h '+(m%60)+'m':m+'m';}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
 function fmtDate(ts,style){
   if(!ts) return '—';
   return style==='long'
