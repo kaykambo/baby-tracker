@@ -287,7 +287,7 @@ body.theme-mom .nav {
       </div>
     </div>
     <div class="qg">
-      <button class="qc feed" onclick="openModal('feed')" aria-label="Log a feed">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div id="d-feed-side" style="font-size:.72rem;color:var(--gold);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-feed-who">—</div>   <button id="d-feed-resume" onclick="event.stopPropagation();openModal('feed')" style="display:none;margin-top:4px;width:100%;background:var(--green);color:#0a0a0f;border:none;border-radius:6px;padding:4px 0;font-size:.72rem;font-weight:700;cursor:pointer">↩ Resume Session</button><div class="qc-btn">+ Log Feed</div></button>
+      <div class="qc feed" onclick="openModal('feed')" role="button" tabindex="0" aria-label="Log a feed" onkeydown="if(event.key==='Enter'||event.key===' ')openModal('feed')">   <div class="qc-ico">🍼</div><div class="qc-lbl">Last Feed</div>   <div class="qc-el" id="d-feed-el">—</div>   <div id="d-feed-side" style="font-size:.72rem;color:var(--gold);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-feed-who">—</div>   <button id="d-feed-resume" onclick="event.stopPropagation();openModal('feed')" style="display:none;margin-top:4px;width:100%;background:var(--green);color:#0a0a0f;border:none;border-radius:6px;padding:4px 0;font-size:.72rem;font-weight:700;cursor:pointer">↩ Resume Session</button><div class="qc-btn">+ Log Feed</div></div>
       <button class="qc diaper" onclick="openModal('diaper')" aria-label="Log a diaper change"> <div class="qc-ico">🧷</div><div class="qc-lbl">Last Diaper</div> <div class="qc-el" id="d-diaper-el">—</div> <div id="d-diaper-type" style="font-size:.72rem;color:var(--blue);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-diaper-who">—</div> <div class="qc-btn">+ Log Diaper</div></button>
       <button class="qc sleep" onclick="openModal('sleep')" aria-label="Log sleep">  <div class="qc-ico">😴</div><div class="qc-lbl">Sleep</div>       <div class="qc-el" id="d-sleep-el">—</div>   <div id="d-sleep-live" style="font-size:.72rem;color:var(--green);font-weight:600;min-height:.9rem"></div><div class="qc-who" id="d-sleep-who">—</div>   <div class="qc-btn" id="d-sleep-btn">+ Log Sleep</div></button>
       <button class="qc tummy" onclick="openModal('tummy')" aria-label="Log tummy time"><div class="qc-ico">⏱️</div><div class="qc-lbl">Tummy Time</div><div class="qc-el" id="d-tummy-el">—</div><div class="qc-who" id="d-tummy-who">—</div><div class="qc-btn">+ Log Tummy</div></button>
@@ -455,8 +455,8 @@ body.theme-mom .nav {
         </div>
       </div>
       <div class="r2">
-        <div class="fg"><label class="fl" for="f-left">Left (min)</label><input class="fi" type="number" id="f-left" inputmode="numeric" placeholder="0" min="0" oninput="updateFeedTime()"></div>
-        <div class="fg"><label class="fl" for="f-right">Right (min)</label><input class="fi" type="number" id="f-right" inputmode="numeric" placeholder="0" min="0" oninput="updateFeedTime()"></div>
+        <div class="fg"><label class="fl" for="f-left">Left (min)</label><input class="fi" type="number" id="f-left" inputmode="numeric" placeholder="0" min="0" oninput="updateFeedTime();syncSideChips()"></div>
+        <div class="fg"><label class="fl" for="f-right">Right (min)</label><input class="fi" type="number" id="f-right" inputmode="numeric" placeholder="0" min="0" oninput="updateFeedTime();syncSideChips()"></div>
       </div>
     </div>
     <div id="bottle-fields" style="display:none">
@@ -689,7 +689,8 @@ function boot() {
   applySettings();
   detectTZ();
   tick(); setInterval(tick, 30000);
-  showAge(); // calculate once on load — age only changes meaningfully day-to-day
+  showAge(); // calculate on load, then refresh hourly so age stays current if app is left open
+  setInterval(showAge, 3600000);
   setInterval(refreshDash, 10000);
   window.addEventListener('online',  () => { online=true;  document.getElementById('offline-pill').classList.remove('show'); syncPending(); });
   window.addEventListener('offline', () => { online=false; document.getElementById('offline-pill').classList.add('show'); });
@@ -1126,10 +1127,12 @@ function refreshDash() {
         resumeBtn.style.display = 'block';
         resumeBtn.textContent = '↩ Resume Session (' + (hasL ? 'add R' : 'add L') + ')';
       } else {
-        resumeFeedId = null;
+        resumeFeedId = null; // both sides done or neither — no resume needed
         resumeBtn.style.display = 'none';
       }
     } else {
+      // Window expired or no qualifying feed — always clear resumeFeedId so a
+      // wake-from-sleep can never merge into a session older than 90 minutes
       resumeFeedId = null;
       resumeBtn.style.display = 'none';
     }
@@ -1269,11 +1272,9 @@ function updateFeedTime() {
   const l = parseInt(document.getElementById('f-left').value) || 0;
   const r = parseInt(document.getElementById('f-right').value) || 0;
   const hint = document.getElementById('f-time-hint');
-  // Use only the minutes for selected sides — if right isn't checked yet,
-  // don't include right minutes in the start-time calculation
-  const leftOn  = document.querySelector('#c-side .chip[data-val="left"]')?.classList.contains('on');
-  const rightOn = document.querySelector('#c-side .chip[data-val="right"]')?.classList.contains('on');
-  const total = (leftOn ? l : 0) + (rightOn ? r : 0);
+  // Use field values directly — don't rely on chip state which may not have
+  // updated yet (syncSideChips runs after updateFeedTime in the oninput chain)
+  const total = (l > 0 ? l : 0) + (r > 0 ? r : 0);
   if (total <= 0) { if(hint) hint.textContent = ''; return; }
   const startMs = Date.now() - total * 60000;
   const d = new Date(startMs);
@@ -1281,6 +1282,18 @@ function updateFeedTime() {
   const localStr = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
   document.getElementById('f-time').value = localStr;
   if(hint) hint.textContent = 'Start time set to ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' (' + total + ' min ago) — edit above to adjust';
+}
+
+// When minutes are entered, auto-select the matching side chip
+function syncSideChips() {
+  const l = parseInt(document.getElementById('f-left').value) || 0;
+  const r = parseInt(document.getElementById('f-right').value) || 0;
+  document.querySelectorAll('#c-side .chip').forEach(chip => {
+    const on = (chip.dataset.val === 'left' && l > 0) ||
+               (chip.dataset.val === 'right' && r > 0);
+    chip.classList.toggle('on', on);
+    chip.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
 }
 
 // When a side chip is tapped, focus the matching minute input so the user
@@ -1633,7 +1646,7 @@ function entryHTML(e){
     case 'mood':   title='Mood: '+(MOODS[e.mood]||'')+' '+cap(e.mood||''); detail=e.notes||''; break;
     case 'tummy':  title='Tummy Time'; detail=(e.durationMin||0)+' min'; break;
     case 'meltdown': title='Meltdown'; detail='Calmed in '+(e.durationMin||'?')+'min'+(e.notes?' — '+e.notes:''); break;
-    case 'weight': title='Weight & Growth'; detail=e.lbs+'lbs '+e.oz+'oz'+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
+    case 'weight': title='Weight & Growth'; detail=(e.lbs||0)+'lbs '+(e.oz||0)+'oz'+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
     case 'appointment': title=e.apptType||'Appointment'; detail=(e.notes||'')+(e.outcomes?' | '+e.outcomes:''); break;
     case 'medication': title=e.medName||'Medication'; detail=(e.dose||'')+(e.notes?' — '+e.notes:''); break;
     default: title=e.type;
@@ -1680,11 +1693,9 @@ function renderLog(reset){
   }
   const f = document.getElementById('log-filter').value;
   const d = daySel.value;
-  // Re-sort defensively before rendering — ensures display order is always correct
-  // even if entries array was modified without an explicit sort somewhere
-  let list = entries
-    .filter(e => f==='all' || e.type===f)
-    .sort((a,b) => b.timestamp - a.timestamp || b.id.localeCompare(a.id));
+  // entries is maintained sorted (newest first) everywhere it's modified.
+  // filter() preserves that order, so no additional sort needed here.
+  let list = entries.filter(e => f==='all' || e.type===f);
   if (d !== 'all') {
     list = list.filter(e => {
       const dt = new Date(e.timestamp);
@@ -1726,23 +1737,33 @@ function renderTrends(){
   }
   const cutoff = buckets[0].start; // 7 days ago start
   let totalFeeds=0, totalDiapers=0, totalSleepMin=0, totalTummy=0;
+  let totalLeftMin=0, totalRightMin=0;
 
   entries.forEach(e => {
     if(e.timestamp < cutoff) return; // older than 7d — skip
     const bucket = buckets.find(b => e.timestamp >= b.start && e.timestamp < b.start+86400000);
     if(!bucket) return;
     if(e.type==='feed')   { bucket.feeds++;   totalFeeds++; }
+    if(e.type==='feed' && e.feedType==='breast') {
+      totalLeftMin  += (e.leftDuration||0);
+      totalRightMin += (e.rightDuration||0);
+    }
     if(e.type==='diaper') { bucket.diapers++; totalDiapers++; }
     if(e.type==='sleep')  { bucket.sleepMin += (e.durationMin||0); totalSleepMin += (e.durationMin||0); }
     if(e.type==='tummy')  { bucket.tummy    += (e.durationMin||0); totalTummy    += (e.durationMin||0); }
   });
 
   const avgSleepMin = Math.round(totalSleepMin/7);
+  const nursingRow = (totalLeftMin + totalRightMin) > 0
+    ? `<div class="sc"><div class="sc-l">Nursing L (7d)</div><div class="sc-v">${fmtMin(totalLeftMin)}</div><div class="sc-s">left side</div></div>
+       <div class="sc"><div class="sc-l">Nursing R (7d)</div><div class="sc-v">${fmtMin(totalRightMin)}</div><div class="sc-s">right side</div></div>`
+    : '';
   document.getElementById('trend-stats').innerHTML=`
     <div class="sc"><div class="sc-l">Feeds (7d)</div><div class="sc-v">${totalFeeds}</div><div class="sc-s">${(totalFeeds/7).toFixed(1)}/day avg</div></div>
     <div class="sc"><div class="sc-l">Diapers (7d)</div><div class="sc-v">${totalDiapers}</div><div class="sc-s">${(totalDiapers/7).toFixed(1)}/day avg</div></div>
     <div class="sc"><div class="sc-l">Avg Sleep/day</div><div class="sc-v">${Math.floor(avgSleepMin/60)}h</div><div class="sc-s">${avgSleepMin%60}m</div></div>
-    <div class="sc"><div class="sc-l">Tummy (7d)</div><div class="sc-v">${totalTummy}</div><div class="sc-s">minutes total</div></div>`;
+    <div class="sc"><div class="sc-l">Tummy (7d)</div><div class="sc-v">${totalTummy}</div><div class="sc-s">minutes total</div></div>
+    ${nursingRow}`;
 
   const labels    = buckets.map(b=>b.label);
   const feedData  = buckets.map(b=>b.feeds);
@@ -1896,7 +1917,7 @@ function exportPDF(){
       case 'mood': d=xp(cap(e.mood||''))+(e.notes?' | '+xp(e.notes):''); break;
       case 'tummy': d=(e.durationMin||0)+' min'; break;
       case 'meltdown': d=`Calmed in ${e.durationMin||'?'}min`+(e.notes?' | '+xp(e.notes):''); break;
-      case 'weight': d=`${e.lbs}lbs ${e.oz}oz`+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
+      case 'weight': d=`${e.lbs||0}lbs ${e.oz||0}oz`+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
       case 'appointment': d=xp(e.apptType||'')+(e.notes?' | '+xp(e.notes):'')+(e.outcomes?' | '+xp(e.outcomes):''); break;
       case 'medication': d=xp(e.medName||'')+(e.dose?' '+xp(e.dose):'')+(e.notes?' | '+xp(e.notes):''); break;
     }
