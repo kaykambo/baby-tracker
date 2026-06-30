@@ -114,6 +114,8 @@ body.theme-mom .nav {
 .qc:active{transform:scale(.96)}
 .qc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .qc.feed::before{background:var(--gold)}.qc.diaper::before{background:var(--blue)}.qc.sleep::before{background:var(--green)}.qc.tummy::before{background:var(--pink)}
+.qc.mood::before{background:var(--gold)}.qc.meltdown::before{background:var(--red)}.qc.weight::before{background:var(--blue)}.qc.appointment::before{background:var(--green)}
+.qc.bath::before{background:var(--blue)}.qc.bassinet::before{background:var(--pink)}
 .qc-ico{font-size:1.4rem;margin-bottom:5px}
 .qc-lbl{font-size:.65rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em}
 .qc-el{font-size:.95rem;font-weight:600;margin:3px 0}
@@ -326,6 +328,8 @@ body.theme-mom .nav {
           <option value="weight">Weight</option>
           <option value="appointment">Appointments</option>
           <option value="medication">Medications</option>
+          <option value="bath">Baths</option>
+          <option value="bassinet">Bassinet</option>
         </select>
       </div>
     </div>
@@ -350,6 +354,8 @@ body.theme-mom .nav {
     <div class="cw"><div class="cl">Daily Feeds</div><canvas id="c-feeds" height="128"></canvas></div>
     <div class="cw"><div class="cl">Daily Diapers</div><canvas id="c-diapers" height="128"></canvas></div>
     <div class="cw"><div class="cl">Daily Sleep (hours)</div><canvas id="c-sleep" height="128"></canvas></div>
+    <div class="cw"><div class="cl">Daily Tummy Time <span style="color:var(--tx3);font-weight:400">· 20 min target</span></div><canvas id="c-tummy" height="128"></canvas></div>
+    <div class="cw"><div class="cl">Daily Bottle Volume (mL)</div><canvas id="c-bottle" height="128"></canvas></div>
     <div class="cw"><div class="cl">Weight (lbs · oz)</div><canvas id="c-weight" height="128"></canvas></div>
     <div class="cw"><div class="cl">Length (inches)</div><canvas id="c-length" height="128"></canvas></div>
   </div>
@@ -358,10 +364,12 @@ body.theme-mom .nav {
   <div class="page" id="page-more">
     <div class="st" style="margin-bottom:13px">Track More</div>
     <div class="qg" style="margin-bottom:18px">
-      <button class="qc" onclick="openModal('mood')" aria-label="Log mood"><div class="qc-ico">😊</div><div class="qc-lbl">Mood</div><div class="qc-btn">+ Log Mood</div></button>
-      <button class="qc" onclick="openModal('meltdown')" aria-label="Log a meltdown event"><div class="qc-ico">😭</div><div class="qc-lbl">Meltdown</div><div class="qc-btn">+ Log Event</div></button>
-      <button class="qc" onclick="openModal('weight')" aria-label="Log weight and growth"><div class="qc-ico">⚖️</div><div class="qc-lbl">Weight / Growth</div><div class="qc-btn">+ Log</div></button>
-      <button class="qc" onclick="openModal('appointment')" aria-label="Log an appointment"><div class="qc-ico">🩺</div><div class="qc-lbl">Appointment</div><div class="qc-btn">+ Log Visit</div></button>
+      <button class="qc mood" onclick="openModal('mood')" aria-label="Log mood"><div class="qc-ico">😊</div><div class="qc-lbl">Mood</div><div class="qc-btn">+ Log Mood</div></button>
+      <button class="qc meltdown" onclick="openModal('meltdown')" aria-label="Log a meltdown event"><div class="qc-ico">😭</div><div class="qc-lbl">Meltdown</div><div class="qc-btn">+ Log Event</div></button>
+      <button class="qc weight" onclick="openModal('weight')" aria-label="Log weight and growth"><div class="qc-ico">⚖️</div><div class="qc-lbl">Weight / Growth</div><div class="qc-btn">+ Log</div></button>
+      <button class="qc appointment" onclick="openModal('appointment')" aria-label="Log an appointment"><div class="qc-ico">🩺</div><div class="qc-lbl">Appointment</div><div class="qc-btn">+ Log Visit</div></button>
+      <button class="qc bath" onclick="openModal('bath')" aria-label="Log a bath"><div class="qc-ico">🛁</div><div class="qc-lbl">Bath</div><div class="qc-btn">+ Log Bath</div></button>
+      <button class="qc bassinet" onclick="openModal('bassinet')" aria-label="Log bassinet sleep attempt"><div class="qc-ico">🛏️</div><div class="qc-lbl">Bassinet</div><div class="qc-btn">+ Log Attempt</div></button>
     </div>
     <div class="sh">
       <div class="st">Medications &amp; Vitamins</div>
@@ -460,7 +468,14 @@ body.theme-mom .nav {
       </div>
     </div>
     <div id="bottle-fields" style="display:none">
-      <div class="fg"><label class="fl" for="f-oz">Amount (oz)</label><input class="fi" type="number" id="f-oz" inputmode="decimal" placeholder="e.g. 3" min="0" step="0.5"></div>
+      <div class="fg">
+        <label class="fl">Unit</label>
+        <div class="chips" id="c-bottleunit">
+          <button class="chip on" role="radio" aria-checked="true"  data-val="mL" onclick="cSingle(this,'c-bottleunit');updateBottleUnit()">mL</button>
+          <button class="chip"    role="radio" aria-checked="false" data-val="oz" onclick="cSingle(this,'c-bottleunit');updateBottleUnit()">oz</button>
+        </div>
+      </div>
+      <div class="fg"><label class="fl" for="f-oz" id="f-oz-label">Amount (mL)</label><input class="fi" type="number" id="f-oz" inputmode="decimal" placeholder="e.g. 90" min="0" step="1"></div>
     </div>
     <div class="fg"><label class="fl" for="f-time">Start Time</label><input class="fi" type="datetime-local" id="f-time" oninput="fTimeEdited=true"><div id="f-time-hint" style="font-size:.7rem;color:var(--tx3);margin-top:4px"></div></div>
     <button class="btn-p" onclick="submitFeed()">Save Feed</button>
@@ -543,6 +558,31 @@ body.theme-mom .nav {
     <div class="fg"><label class="fl" for="tt-time">Time</label><input class="fi" type="datetime-local" id="tt-time"></div>
     <div class="fg"><label class="fl" for="tt-dur">Duration (minutes)</label><input class="fi" type="number" id="tt-dur" inputmode="numeric" placeholder="e.g. 5" min="0"></div>
     <button class="btn-p" onclick="submitTummy()">Save Session</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- BATH -->
+  <div class="modal" id="m-bath" style="display:none">
+    <div class="mh"></div><div class="mt">🛁 Log Bath</div>
+    <div class="fg"><label class="fl" for="bt-time">Date &amp; Time</label><input class="fi" type="datetime-local" id="bt-time"></div>
+    <button class="btn-p" onclick="submitBath()">Save Bath</button>
+    <button class="btn-c" onclick="closeModal()">Cancel</button>
+  </div>
+
+  <!-- BASSINET -->
+  <div class="modal" id="m-bassinet" style="display:none">
+    <div class="mh"></div><div class="mt">🛏️ Log Bassinet Attempt</div>
+    <div class="fg"><label class="fl" for="bs-time">Time Placed</label><input class="fi" type="datetime-local" id="bs-time"></div>
+    <div class="fg">
+      <label class="fl">Outcome</label>
+      <div class="chips" id="c-bassinet">
+        <button class="chip on" role="radio" aria-checked="true"  data-val="success" onclick="cSingle(this,'c-bassinet')">Stayed asleep</button>
+        <button class="chip"    role="radio" aria-checked="false" data-val="woke"    onclick="cSingle(this,'c-bassinet')">Woke / fussed</button>
+      </div>
+    </div>
+    <div class="fg"><label class="fl" for="bs-dur">Duration in bassinet (min, optional)</label><input class="fi" type="number" id="bs-dur" inputmode="numeric" placeholder="e.g. 20" min="0"></div>
+    <div class="fg"><label class="fl" for="bs-notes">Notes (optional)</label><textarea class="fta" id="bs-notes" placeholder="What helped or didn't..."></textarea></div>
+    <button class="btn-p" onclick="submitBassinet()">Save Attempt</button>
     <button class="btn-c" onclick="closeModal()">Cancel</button>
   </div>
 
@@ -1199,6 +1239,7 @@ function prepModal(type) {
       document.getElementById('m-feed').querySelector('.mt').textContent = '🍼 Log Feed';
       document.getElementById('f-time').value=now;
       cSingleByVal('c-feedtype', S.feedType||'breast');
+      cSingleByVal('c-bottleunit', 'mL'); updateBottleUnit();
       updateFeedFields();
       document.querySelectorAll('#c-side .chip').forEach(c=>{const on=c.dataset.val==='left';c.classList.toggle('on',on);c.setAttribute('aria-checked',on?'true':'false');});
       document.getElementById('f-left').value=''; document.getElementById('f-right').value=''; document.getElementById('f-oz').value='';
@@ -1238,6 +1279,13 @@ function prepModal(type) {
     document.getElementById('med-sched').value='Once daily';
   }
   if(type==='med-log'){document.getElementById('ml2-time').value=now;document.getElementById('ml2-notes').value='';}
+  if(type==='bath'){document.getElementById('bt-time').value=now;}
+  if(type==='bassinet'){
+    document.getElementById('bs-time').value=now;
+    document.getElementById('bs-dur').value='';
+    document.getElementById('bs-notes').value='';
+    cSingleByVal('c-bassinet','success');
+  }
 }
 function closeModal() {
   if(activeModal==='feed') { tReset(); document.getElementById('m-feed').querySelector('.mt').textContent='🍼 Log Feed'; resumeFeedId=null; }
@@ -1305,6 +1353,20 @@ function focusSideField(side) {
 
 function updateFeedFields(){const t=chipVal('c-feedtype');document.getElementById('breast-fields').style.display=t==='breast'?'block':'none';document.getElementById('bottle-fields').style.display=t==='bottle'?'block':'none';}
 
+// Updates the amount field label and placeholder/step when bottle unit changes
+function updateBottleUnit(){
+  const unit = chipVal('c-bottleunit') || 'mL';
+  const lbl = document.getElementById('f-oz-label');
+  const inp = document.getElementById('f-oz');
+  if (unit === 'mL') {
+    lbl.textContent = 'Amount (mL)';
+    inp.placeholder = 'e.g. 90'; inp.step = '1';
+  } else {
+    lbl.textContent = 'Amount (oz)';
+    inp.placeholder = 'e.g. 3'; inp.step = '0.5';
+  }
+}
+
 // ═══════════════════════════════════════════════════════
 // ENTRY FACTORY
 // ═══════════════════════════════════════════════════════
@@ -1354,7 +1416,7 @@ function submitFeed(){
     }
     addEntry('feed',{feedType:'breast',sides:chipVals('c-side'),leftDuration:ld,rightDuration:rd,timestamp:ts});
   } else {
-    addEntry('feed',{feedType:'bottle',bottleAmount:Math.max(0,parseFloat(document.getElementById('f-oz').value)||0),timestamp:ts});
+    addEntry('feed',{feedType:'bottle',bottleAmount:Math.max(0,parseFloat(document.getElementById('f-oz').value)||0),bottleUnit:chipVal('c-bottleunit')||'mL',timestamp:ts});
   }
   resumeFeedId = null; // clear resume state after any feed save
 }
@@ -1435,6 +1497,14 @@ function submitTummy(){
   const dur=Math.max(0,parseInt(document.getElementById('tt-dur').value)||0);
   if(dur===0){toast('⚠️ Enter a duration greater than 0');return;}
   addEntry('tummy',{durationMin:dur,timestamp:parseLocal('tt-time')});
+}
+function submitBath(){
+  addEntry('bath',{timestamp:parseLocal('bt-time')});
+}
+function submitBassinet(){
+  const outcome=chipVal('c-bassinet')||'success';
+  const dur=Math.max(0,parseInt(document.getElementById('bs-dur').value)||0);
+  addEntry('bassinet',{outcome,durationMin:dur,notes:document.getElementById('bs-notes').value.trim(),timestamp:parseLocal('bs-time')});
 }
 function submitWeight(){
   const lbs=parseFloat(document.getElementById('w-lbs').value)||0;
@@ -1623,7 +1693,7 @@ function renderJournal(){
 // ═══════════════════════════════════════════════════════
 // ENTRY HTML
 // ═══════════════════════════════════════════════════════
-const ICO={feed:'🍼',diaper:'🧷',sleep:'😴',mood:'😊',tummy:'⏱️',meltdown:'😭',weight:'⚖️',appointment:'🩺',medication:'💊'};
+const ICO={feed:'🍼',diaper:'🧷',sleep:'😴',mood:'😊',tummy:'⏱️',meltdown:'😭',weight:'⚖️',appointment:'🩺',medication:'💊',bath:'🛁',bassinet:'🛏️'};
 const MOODS={happy:'😄',calm:'😌',fussy:'😤',crying:'😢'};
 
 function entryHTML(e){
@@ -1638,7 +1708,7 @@ function entryHTML(e){
         if(e.leftDuration  > 0) parts.push('L '+e.leftDuration+'min');
         if(e.rightDuration > 0) parts.push('R '+e.rightDuration+'min');
         detail=parts.join(' · ')||'Duration not recorded';
-      } else {title='Bottle Feed';detail=e.bottleAmount?e.bottleAmount+' oz':'';}
+      } else {title='Bottle Feed';detail=e.bottleAmount?e.bottleAmount+' '+(e.bottleUnit||'oz'):'';}
       break;
     }
     case 'diaper': title='Diaper Change'; detail=(e.diaperTypes||[]).join(' + ')+(e.notes?' — '+e.notes:''); break;
@@ -1649,6 +1719,8 @@ function entryHTML(e){
     case 'weight': title='Weight & Growth'; detail=(e.lbs||0)+'lbs '+(e.oz||0)+'oz'+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
     case 'appointment': title=e.apptType||'Appointment'; detail=(e.notes||'')+(e.outcomes?' | '+e.outcomes:''); break;
     case 'medication': title=e.medName||'Medication'; detail=(e.dose||'')+(e.notes?' — '+e.notes:''); break;
+    case 'bath': title='Bath'; detail=''; break;
+    case 'bassinet': title='Bassinet — '+(e.outcome==='success'?'Stayed asleep':'Woke / fussed'); detail=(e.durationMin?e.durationMin+' min':'')+(e.notes?(e.durationMin?' — ':'')+e.notes:''); break;
     default: title=e.type;
   }
   return `<div class="li"><div class="li-ico">${ICO[e.type]||'📝'}</div><div class="li-body"><div class="li-title">${esc(title)}</div>${detail?`<div class="li-detail">${esc(detail)}</div>`:''}<div class="li-meta">${fmtDate(e.timestamp,'short')} · ${esc(nameOf(e.by))}</div></div><div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0"><button class="del-btn" aria-label="Edit ${esc(e.type)} entry" onclick="openEdit('${e.id}')" style="color:var(--blue)">✎</button><button class="del-btn" aria-label="Delete ${esc(e.type)} entry" onclick="deleteEntry('${e.id}')">✕</button></div></div>`;
@@ -1732,7 +1804,7 @@ function renderTrends(){
     buckets.push({
       label: d.toLocaleDateString('en-US',{weekday:'short'}),
       start: new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),
-      feeds:0, diapers:0, sleepMin:0, tummy:0
+      feeds:0, diapers:0, sleepMin:0, tummy:0, bottleMl:0
     });
   }
   const cutoff = buckets[0].start; // 7 days ago start
@@ -1751,9 +1823,32 @@ function renderTrends(){
     if(e.type==='diaper') { bucket.diapers++; totalDiapers++; }
     if(e.type==='sleep')  { bucket.sleepMin += (e.durationMin||0); totalSleepMin += (e.durationMin||0); }
     if(e.type==='tummy')  { bucket.tummy    += (e.durationMin||0); totalTummy    += (e.durationMin||0); }
+    if(e.type==='feed' && e.feedType==='bottle' && e.bottleAmount) {
+      // Normalize to mL for consistent charting regardless of which unit was used to log
+      const ml = (e.bottleUnit==='oz') ? e.bottleAmount * 29.5735 : e.bottleAmount;
+      bucket.bottleMl += ml;
+    }
   });
 
   const avgSleepMin = Math.round(totalSleepMin/7);
+
+  // Bassinet streak + 7-day success rate — sorted oldest→newest for streak calc
+  const bassinetEntries = entries.filter(e => e.type==='bassinet').sort((a,b)=>a.timestamp-b.timestamp);
+  const bassinet7d = bassinetEntries.filter(e => e.timestamp >= cutoff);
+  let bassinetStreak = 0;
+  for (let i = bassinetEntries.length - 1; i >= 0; i--) {
+    if (bassinetEntries[i].outcome === 'success') bassinetStreak++;
+    else break;
+  }
+  const bassinetRow = bassinetEntries.length > 0
+    ? (() => {
+        const successCount = bassinet7d.filter(e => e.outcome === 'success').length;
+        const rate = bassinet7d.length ? Math.round((successCount/bassinet7d.length)*100) : 0;
+        return `<div class="sc"><div class="sc-l">Bassinet Streak</div><div class="sc-v">${bassinetStreak}</div><div class="sc-s">${bassinetStreak===1?'success in a row':'successes in a row'}</div></div>
+        <div class="sc"><div class="sc-l">Bassinet Rate (7d)</div><div class="sc-v">${rate}%</div><div class="sc-s">${successCount}/${bassinet7d.length} attempts</div></div>`;
+      })()
+    : '';
+
   const nursingRow = (totalLeftMin + totalRightMin) > 0
     ? `<div class="sc"><div class="sc-l">Nursing L (7d)</div><div class="sc-v">${fmtMin(totalLeftMin)}</div><div class="sc-s">left side</div></div>
        <div class="sc"><div class="sc-l">Nursing R (7d)</div><div class="sc-v">${fmtMin(totalRightMin)}</div><div class="sc-s">right side</div></div>`
@@ -1763,12 +1858,15 @@ function renderTrends(){
     <div class="sc"><div class="sc-l">Diapers (7d)</div><div class="sc-v">${totalDiapers}</div><div class="sc-s">${(totalDiapers/7).toFixed(1)}/day avg</div></div>
     <div class="sc"><div class="sc-l">Avg Sleep/day</div><div class="sc-v">${Math.floor(avgSleepMin/60)}h</div><div class="sc-s">${avgSleepMin%60}m</div></div>
     <div class="sc"><div class="sc-l">Tummy (7d)</div><div class="sc-v">${totalTummy}</div><div class="sc-s">minutes total</div></div>
-    ${nursingRow}`;
+    ${nursingRow}
+    ${bassinetRow}`;
 
   const labels    = buckets.map(b=>b.label);
   const feedData  = buckets.map(b=>b.feeds);
   const diaperData= buckets.map(b=>b.diapers);
   const sleepData = buckets.map(b=>Math.round(b.sleepMin/60*10)/10);
+  const tummyData = buckets.map(b=>b.tummy);
+  const bottleData= buckets.map(b=>Math.round(b.bottleMl));
 
   // Weight and length: all-time data points sorted oldest first for line charts
   const weightEntries = [...entries].filter(e => e.type==='weight' && (e.lbs||e.oz||e.length))
@@ -1788,12 +1886,14 @@ function renderTrends(){
     drawBar('c-feeds',   labels, feedData,   '#c9a96e');
     drawBar('c-diapers', labels, diaperData, '#7c9ec9');
     drawBar('c-sleep',   labels, sleepData,  '#9ec99e');
+    drawBar('c-tummy',   labels, tummyData,  '#c97c9e', 20); // 20-min/day target line
+    drawBar('c-bottle',  labels, bottleData, '#7c9ec9');
     drawLine('c-weight', weightPoints, '#c9a96e');
     drawLine('c-length', lengthPoints, '#c97ca8');
   });
 }
 
-function drawBar(id,labels,data,color){
+function drawBar(id,labels,data,color,targetLine){
   const cv=document.getElementById(id); if(!cv) return;
   const W=cv.offsetWidth, H=128;
   if(!W) return; // canvas not yet in layout (e.g. iOS initial render) — renderTrends() will retry on next navTo
@@ -1804,7 +1904,9 @@ function drawBar(id,labels,data,color){
     if(typeof ctx.roundRect==='function'){ctx.roundRect(x,y,w,h,r);}
     else{ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
   };
-  const max=Math.max(...data,1);
+  // If a target line is supplied, ensure the chart scale covers it so the line
+  // is always visible even on days that fall short of target
+  const max=Math.max(...data,targetLine||0,1);
   const p={t:10,b:26,l:18,r:6};
   const bw=(W-p.l-p.r)/labels.length;
   ctx.clearRect(0,0,W,H);
@@ -1822,6 +1924,16 @@ function drawBar(id,labels,data,color){
     // Value label
     if(v>0){ctx.fillStyle='#9898b0'; ctx.fillText(v,x+w/2,y-3);}
   });
+  // Target line — dashed horizontal line at the target value
+  if (targetLine) {
+    const ty = H - p.b - (targetLine/max)*(H-p.t-p.b);
+    ctx.save();
+    ctx.setLineDash([4,3]);
+    ctx.strokeStyle = '#e8e8f0aa';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(p.l, ty); ctx.lineTo(W-p.r, ty); ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawLine(id, points, color) {
@@ -1909,7 +2021,7 @@ function exportPDF(){
           if((e.leftDuration||0)>0)  pp.push('L:'+e.leftDuration+'min');
           if((e.rightDuration||0)>0) pp.push('R:'+e.rightDuration+'min');
           d='Breastfed'+(pp.length?' – '+pp.join(' '):' – duration not recorded');
-        } else { d='Bottle – '+(e.bottleAmount||0)+'oz'; }
+        } else { d='Bottle – '+(e.bottleAmount||0)+(e.bottleUnit||'oz'); }
         break;
       }
       case 'diaper': d=xp((e.diaperTypes||[]).join('+'))+(e.notes?' | '+xp(e.notes):''); break;
@@ -1920,6 +2032,8 @@ function exportPDF(){
       case 'weight': d=`${e.lbs||0}lbs ${e.oz||0}oz`+(e.length?' · '+e.length+'"':'')+(e.head?' · Head '+e.head+'"':''); break;
       case 'appointment': d=xp(e.apptType||'')+(e.notes?' | '+xp(e.notes):'')+(e.outcomes?' | '+xp(e.outcomes):''); break;
       case 'medication': d=xp(e.medName||'')+(e.dose?' '+xp(e.dose):'')+(e.notes?' | '+xp(e.notes):''); break;
+      case 'bath': d='Bath taken'; break;
+      case 'bassinet': d=(e.outcome==='success'?'Stayed asleep':'Woke / fussed')+(e.durationMin?' — '+e.durationMin+' min':'')+(e.notes?' | '+xp(e.notes):''); break;
     }
     return `<tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${ICO[e.type]||''} ${xp(e.type)}</td><td>${d}</td><td>${xp(nameOf(e.by))}</td></tr>`;
   }).join('');
@@ -2070,9 +2184,17 @@ function buildEditFields(e) {
           <div class="fg"><label class="fl">Left (min)</label><input class="fi" type="number" id="ed-left" inputmode="numeric" value="${e.leftDuration||0}" min="0"></div>
           <div class="fg"><label class="fl">Right (min)</label><input class="fi" type="number" id="ed-right" inputmode="numeric" value="${e.rightDuration||0}" min="0"></div>
         </div></div>`;
-      html += `<div id="ed-bottle-fields" style="display:${!isBreast?'block':'none'}">
-        <div class="fg"><label class="fl">Amount (oz)</label><input class="fi" type="number" id="ed-oz" inputmode="decimal" value="${e.bottleAmount||0}" step="0.5" min="0"></div>
-        </div>`;
+      {
+        const isML = (e.bottleUnit||'mL') === 'mL';
+        html += `<div id="ed-bottle-fields" style="display:${!isBreast?'block':'none'}">
+          <div class="fg"><label class="fl">Unit</label>
+            <div class="chips" id="ed-c-bottleunit">
+              <button class="chip ${isML?'on':''}" role="radio" aria-checked="${isML}" data-val="mL" onclick="cSingle(this,'ed-c-bottleunit')">mL</button>
+              <button class="chip ${!isML?'on':''}" role="radio" aria-checked="${!isML}" data-val="oz" onclick="cSingle(this,'ed-c-bottleunit')">oz</button>
+            </div></div>
+          <div class="fg"><label class="fl">Amount</label><input class="fi" type="number" id="ed-oz" inputmode="decimal" value="${e.bottleAmount||0}" step="0.5" min="0"></div>
+          </div>`;
+      }
       break;
     }
     case 'diaper': {
@@ -2115,6 +2237,17 @@ function buildEditFields(e) {
     case 'medication':
       html += `<div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ed-notes">${esc(e.notes||'')}</textarea></div>`;
       break;
+    case 'bassinet': {
+      const isSuccess = e.outcome === 'success';
+      html += `<div class="fg"><label class="fl">Outcome</label>
+        <div class="chips" id="ed-c-bassinet">
+          <button class="chip ${isSuccess?'on':''}" role="radio" aria-checked="${isSuccess}" data-val="success" onclick="cSingle(this,'ed-c-bassinet')">Stayed asleep</button>
+          <button class="chip ${!isSuccess?'on':''}" role="radio" aria-checked="${!isSuccess}" data-val="woke" onclick="cSingle(this,'ed-c-bassinet')">Woke / fussed</button>
+        </div></div>`;
+      html += `<div class="fg"><label class="fl">Duration (min)</label><input class="fi" type="number" id="ed-dur" inputmode="numeric" value="${e.durationMin||0}" min="0"></div>`;
+      html += `<div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ed-notes">${esc(e.notes||'')}</textarea></div>`;
+      break;
+    }
     case 'weight':
       html += `<div class="r2">
         <div class="fg"><label class="fl">Weight (lbs)</label><input class="fi" type="number" id="ed-lbs" inputmode="decimal" step="0.1" value="${e.lbs||0}" min="0"></div>
@@ -2145,6 +2278,8 @@ function submitEdit() {
         e.rightDuration = Math.max(0, parseInt(g('ed-right'))||0);
       } else {
         e.bottleAmount = Math.max(0, parseFloat(g('ed-oz'))||0);
+        const bu = document.querySelector('#ed-c-bottleunit .chip.on');
+        if (bu) e.bottleUnit = bu.dataset.val;
       }
       break;
     }
@@ -2177,6 +2312,13 @@ function submitEdit() {
     case 'appointment': e.apptType=(g('ed-aptype')||'').trim(); e.notes=(g('ed-notes')||'').trim(); e.outcomes=(g('ed-outcomes')||'').trim(); break;
     case 'medication':  e.notes=(g('ed-notes')||'').trim(); break;
     case 'weight':      e.lbs=parseFloat(g('ed-lbs'))||0; e.oz=parseInt(g('ed-oz'))||0; e.length=parseFloat(g('ed-len'))||0; e.head=parseFloat(g('ed-head'))||0; break;
+    case 'bassinet': {
+      const bp = document.querySelector('#ed-c-bassinet .chip.on');
+      if (bp) e.outcome = bp.dataset.val;
+      e.durationMin = Math.max(0, parseInt(g('ed-dur'))||0);
+      e.notes = (g('ed-notes')||'').trim();
+      break;
+    }
   }
   // Update logged-by from chip selection
   const byChip = document.querySelector('#ed-c-by .chip.on');
