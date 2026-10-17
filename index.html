@@ -350,7 +350,34 @@ body.theme-mom .nav {
   <!-- TRENDS -->
   <div class="page" id="page-trends">
     <div class="st" style="margin-bottom:13px">Last 7 Days</div>
+    <!-- Pattern Heatmap -->
+    <div class="cw" style="margin-bottom:18px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+        <div class="cl" style="margin-bottom:0">Activity Pattern <span style="color:var(--tx3);font-weight:400">· last 14 days</span></div>
+        <div style="display:flex;gap:10px;font-size:.62rem;color:var(--tx3)">
+          <span>🍼 Feed</span><span>😴 Sleep</span><span>😭 Fussy</span>
+        </div>
+      </div>
+      <!-- Hour labels row -->
+      <div id="heatmap-hours" style="display:grid;grid-template-columns:28px repeat(24,1fr);gap:1px;margin-bottom:1px"></div>
+      <!-- Heatmap rows -->
+      <div id="heatmap-grid" style="display:grid;grid-template-columns:28px repeat(24,1fr);gap:1px"></div>
+      <!-- Peak time callouts -->
+      <div id="heatmap-peaks" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
     <div class="sg" id="trend-stats"></div>
+    <div class="cw" style="margin-bottom:18px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+        <div class="cl" style="margin-bottom:0">Daily Schedule <span style="color:var(--tx3);font-weight:400">· last 14 days</span></div>
+        <div style="display:flex;gap:8px;font-size:.62rem;color:var(--tx3)">
+          <span style="color:#c9a96e">● Feed</span>
+          <span style="color:#9ec99e">● Sleep</span>
+          <span style="color:#9ec99e;opacity:.5">○ Wake</span>
+          <span style="color:#c97c7c">● Fussy</span>
+        </div>
+      </div>
+      <canvas id="c-scatter" height="220"></canvas>
+    </div>
     <div class="cw"><div class="cl">Daily Feeds</div><canvas id="c-feeds" height="128"></canvas></div>
     <div class="cw"><div class="cl">Daily Diapers</div><canvas id="c-diapers" height="128"></canvas></div>
     <div class="cw"><div class="cl">Daily Sleep (hours)</div><canvas id="c-sleep" height="128"></canvas></div>
@@ -896,7 +923,7 @@ function connectToDb(cfg, elS, elB) {
     });
     fbRef.child('journals').on('value', snap => {
       const v = snap.val();
-      journals = v ? Object.values(v).sort((a,b) => b.timestamp - a.timestamp) : [];
+      journals = v ? Object.values(v).sort((a,b) => b.timestamp - a.timestamp || b.id.localeCompare(a.id)) : [];
       saveAll(); renderJournal();
     });
     elB.textContent = '✓ Syncing'; elB.style.color = 'var(--green)';
@@ -1813,7 +1840,9 @@ function renderTrends(){
 
   entries.forEach(e => {
     if(e.timestamp < cutoff) return; // older than 7d — skip
-    const bucket = buckets.find(b => e.timestamp >= b.start && e.timestamp < b.start+86400000);
+    // Calculate bucket index directly instead of scanning all 7 buckets
+    const bucketIdx = Math.floor((e.timestamp - cutoff) / 86400000);
+    const bucket = buckets[bucketIdx];
     if(!bucket) return;
     if(e.type==='feed')   { bucket.feeds++;   totalFeeds++; }
     if(e.type==='feed' && e.feedType==='breast') {
@@ -1882,6 +1911,8 @@ function renderTrends(){
     .filter(e => e.length > 0)
     .map(e => ({x: e.timestamp, y: e.length, label: e.length + '"'}));
 
+  drawHeatmap();
+  drawScatter();
   requestAnimationFrame(()=>{
     drawBar('c-feeds',   labels, feedData,   '#c9a96e');
     drawBar('c-diapers', labels, diaperData, '#7c9ec9');
@@ -2021,7 +2052,7 @@ function exportPDF(){
           if((e.leftDuration||0)>0)  pp.push('L:'+e.leftDuration+'min');
           if((e.rightDuration||0)>0) pp.push('R:'+e.rightDuration+'min');
           d='Breastfed'+(pp.length?' – '+pp.join(' '):' – duration not recorded');
-        } else { d='Bottle – '+(e.bottleAmount||0)+(e.bottleUnit||'oz'); }
+        } else { d='Bottle – '+(e.bottleAmount||0)+' '+(e.bottleUnit||'oz'); }
         break;
       }
       case 'diaper': d=xp((e.diaperTypes||[]).join('+'))+(e.notes?' | '+xp(e.notes):''); break;
@@ -2330,6 +2361,235 @@ function submitEdit() {
   fbPush('entries', e.id, e);
   refreshDash(); renderLog();
   closeModal(); toast('Entry updated ✓');
+}
+
+// ═══════════════════════════════════════════════════════
+// PATTERN HEATMAP
+// ═══════════════════════════════════════════════════════
+function drawHeatmap() {
+  const hoursEl = document.getElementById('heatmap-hours');
+  const gridEl  = document.getElementById('heatmap-grid');
+  const peaksEl = document.getElementById('heatmap-peaks');
+  if (!hoursEl || !gridEl || !peaksEl) return;
+
+  // Use last 14 days for more signal than 7 days
+  const cutoff14 = Date.now() - 14 * 86400000;
+
+  // Build 3 × 24 frequency tables (rows: feed, sleep, fussy)
+  // For sleep: spread the duration across hours covered by each sleep session
+  const feedHz  = new Array(24).fill(0);
+  const sleepHz = new Array(24).fill(0);
+  const fussyHz = new Array(24).fill(0);
+
+  entries.forEach(e => {
+    if (e.timestamp < cutoff14) return;
+    const hr = new Date(e.timestamp).getHours();
+    if (e.type === 'feed')     feedHz[hr]++;
+    if (e.type === 'meltdown') fussyHz[hr]++;
+    if (e.type === 'sleep' && e.sleepEnd) {
+      // Spread sleep across each hour it covers rather than just the start hour
+      const startHr = Math.floor(e.timestamp / 3600000);
+      const endHr   = Math.floor(e.sleepEnd  / 3600000);
+      for (let h = startHr; h <= endHr; h++) {
+        sleepHz[h % 24]++;
+      }
+    }
+  });
+
+  // Normalise each row independently so dim patterns still show up
+  const norm = arr => {
+    const mx = Math.max(...arr, 1);
+    return arr.map(v => v / mx);
+  };
+  const feedN  = norm(feedHz);
+  const sleepN = norm(sleepHz);
+  const fussyN = norm(fussyHz);
+
+  // Colours matching existing theme
+  const COLORS = {
+    feed:  '201,169,110', // --gold
+    sleep: '158,201,158', // --green
+    fussy: '201,124,124', // --red
+  };
+
+  // Hour labels (0,3,6...21 labelled; others blank for readability)
+  hoursEl.innerHTML = '<div></div>' + // row label spacer
+    Array.from({length:24},(_,h) =>
+      `<div style="font-size:.52rem;color:var(--tx3);text-align:center;padding-bottom:1px">${h%3===0?h+'h':''}</div>`
+    ).join('');
+
+  // Build grid rows
+  const rows = [
+    { key:'feed',  norm:feedN,  label:'🍼', color:COLORS.feed  },
+    { key:'sleep', norm:sleepN, label:'😴', color:COLORS.sleep },
+    { key:'fussy', norm:fussyN, label:'😭', color:COLORS.fussy },
+  ];
+
+  gridEl.innerHTML = rows.map(row =>
+    `<div style="font-size:.65rem;display:flex;align-items:center;justify-content:center;color:var(--tx3)">${row.label}</div>` +
+    row.norm.map(v => {
+      const alpha = v < 0.05 ? '0.04' : (0.12 + v * 0.88).toFixed(2);
+      const border = v > 0.6 ? `border:1px solid rgba(${row.color},0.5)` : '';
+      return `<div style="height:22px;border-radius:3px;background:rgba(${row.color},${alpha});${border}"></div>`;
+    }).join('')
+  ).join('');
+
+  // Peak time callouts — find the top hour for feeds and sleep
+  const peakFeedHr  = feedHz.indexOf(Math.max(...feedHz));
+  const peakSleepHr = sleepHz.indexOf(Math.max(...sleepHz));
+  const peakFussyHr = fussyHz.indexOf(Math.max(...fussyHz));
+  const fmt12 = h => { const ap=h<12?'am':'pm'; return (h%12||12)+ap; };
+
+  const pills = [];
+  if (Math.max(...feedHz)  > 0) pills.push({color:COLORS.feed,  text:`🍼 Feeds peak around ${fmt12(peakFeedHr)}`});
+  if (Math.max(...sleepHz) > 0) pills.push({color:COLORS.sleep, text:`😴 Sleep peaks around ${fmt12(peakSleepHr)}`});
+  if (Math.max(...fussyHz) > 0) pills.push({color:COLORS.fussy, text:`😭 Fussy peaks around ${fmt12(peakFussyHr)}`});
+
+  peaksEl.innerHTML = pills.map(p =>
+    `<div style="background:rgba(${p.color},0.15);border:1px solid rgba(${p.color},0.3);border-radius:20px;padding:4px 10px;font-size:.7rem;color:var(--tx2)">${p.text}</div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// DAILY SCHEDULE SCATTER PLOT
+// ═══════════════════════════════════════════════════════
+function drawScatter() {
+  const cv = document.getElementById('c-scatter'); if (!cv) return;
+  const W = cv.offsetWidth; if (!W) return;
+  const H = 220;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  // Layout padding
+  const p = { t: 8, b: 22, l: 30, r: 6 };
+  const chartW = W - p.l - p.r;
+  const chartH = H - p.t - p.b;
+
+  // 14-day window — one column per day, oldest on left
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+    days.push(d.getTime());
+  }
+  const cutoff14 = days[0];
+
+  // Map day index (0-13) → x pixel center
+  const dayX = i => p.l + (i + 0.5) * (chartW / 14);
+  // Map time-of-day ms → y pixel (midnight=bottom, 11:59pm=top)
+  const timeY = ms => {
+    const msSinceMidnight = ms % 86400000;
+    return p.t + (1 - msSinceMidnight / 86400000) * chartH;
+  };
+
+  // Draw background grid lines for every 3 hours (inverted: midnight=bottom, 11pm=top)
+  ctx.strokeStyle = '#2a2a3d';
+  ctx.lineWidth = 0.5;
+  for (let h = 0; h <= 24; h += 3) {
+    const y = p.t + (1 - h / 24) * chartH;
+    ctx.beginPath(); ctx.moveTo(p.l, y); ctx.lineTo(W - p.r, y); ctx.stroke();
+    // Hour label on left axis
+    if (h < 24) {
+      ctx.font = '8px DM Sans,sans-serif';
+      ctx.fillStyle = '#5a5a78';
+      ctx.textAlign = 'right';
+      ctx.fillText(h === 0 ? '12a' : h < 12 ? h+'a' : h === 12 ? '12p' : (h-12)+'p', p.l - 3, y + 3);
+    }
+  }
+
+  // Vertical day separator lines
+  ctx.strokeStyle = '#1e1e2d';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 14; i++) {
+    const x = p.l + i * (chartW / 14);
+    ctx.beginPath(); ctx.moveTo(x, p.t); ctx.lineTo(x, H - p.b); ctx.stroke();
+  }
+
+  // Day labels on X axis — show day name for every other day to avoid crowding
+  ctx.font = '8px DM Sans,sans-serif';
+  ctx.fillStyle = '#5a5a78';
+  ctx.textAlign = 'center';
+  days.forEach((ts, i) => {
+    if (i % 2 === 0 || i === 13) { // first, last, and every other
+      const d = new Date(ts);
+      const lbl = d.toLocaleDateString('en-US', {weekday:'short'}) + ' ' + (d.getMonth()+1) + '/' + d.getDate();
+      ctx.fillText(lbl, dayX(i), H - 5);
+    }
+  });
+
+  // Collect relevant entries in the 14-day window
+  const relevant = entries.filter(e =>
+    e.timestamp >= cutoff14 &&
+    ['feed','sleep','meltdown'].includes(e.type)
+  );
+
+  // Helper: which day index does this timestamp fall on?
+  // Uses arithmetic instead of findIndex + Date object creation on every call
+  const dayIdx = ts => {
+    const idx = Math.floor((ts - cutoff14) / 86400000);
+    return (idx >= 0 && idx < 14) ? idx : -1;
+  };
+
+  // Draw sleep sessions first (as vertical lines) so they're behind the dots
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#9ec99e66';
+  relevant.filter(e => e.type === 'sleep' && e.sleepEnd).forEach(e => {
+    const di = dayIdx(e.timestamp);
+    if (di < 0) return;
+    // Sleep can cross midnight — draw a line per day segment
+    const endTs = e.sleepEnd;
+    // If sleep ends on the same day
+    const endDay = new Date(endTs); endDay.setHours(0,0,0,0);
+    const startDay = new Date(e.timestamp); startDay.setHours(0,0,0,0);
+    if (endDay.getTime() === startDay.getTime()) {
+      const x = dayX(di);
+      ctx.beginPath();
+      ctx.moveTo(x, timeY(e.timestamp));
+      ctx.lineTo(x, timeY(endTs));
+      ctx.stroke();
+    } else {
+      // Crosses midnight — draw to bottom on start day, from top on end day
+      const diEnd = dayIdx(endTs);
+      const x1 = dayX(di);
+      ctx.beginPath(); ctx.moveTo(x1, timeY(e.timestamp)); ctx.lineTo(x1, p.t + chartH); ctx.stroke();
+      if (diEnd >= 0) {
+        const x2 = dayX(diEnd);
+        ctx.beginPath(); ctx.moveTo(x2, p.t); ctx.lineTo(x2, timeY(endTs)); ctx.stroke();
+      }
+    }
+  });
+
+  // Draw dots
+  relevant.forEach(e => {
+    const di = dayIdx(e.timestamp);
+    if (di < 0) return;
+    const x = dayX(di);
+    const y = timeY(e.timestamp);
+
+    if (e.type === 'feed') {
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = '#c9a96e'; ctx.fill();
+    } else if (e.type === 'meltdown') {
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = '#c97c7c'; ctx.fill();
+    } else if (e.type === 'sleep') {
+      // Sleep start = filled green dot
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = '#9ec99e'; ctx.fill();
+      // Wake time = hollow green dot (if sleepEnd available and on same or next day)
+      if (e.sleepEnd) {
+        const diEnd = dayIdx(e.sleepEnd);
+        const wakeX = diEnd >= 0 ? dayX(diEnd) : null;
+        const wakeY = timeY(e.sleepEnd);
+        if (wakeX !== null) {
+          ctx.beginPath(); ctx.arc(wakeX, wakeY, 3, 0, Math.PI*2);
+          ctx.strokeStyle = '#9ec99e'; ctx.lineWidth = 1.5; ctx.stroke();
+        }
+      }
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════
