@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Diaper 🧷">
+<title>🧷 Quick Diaper</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  html,body{
+    height:100%;background:#0a0a0f;color:#e8e8f0;
+    font-family:'DM Sans',system-ui,sans-serif;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:22px;padding:32px;
+  }
+  .ico{font-size:4.5rem;line-height:1}
+  .label{font-size:1.1rem;color:#a0a0b8;text-align:center}
+  .ts{font-size:.9rem;color:#5a5a78;text-align:center}
+  .ring-wrap{position:relative;width:80px;height:80px}
+  svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
+  circle.track{fill:none;stroke:#1e1e2d;stroke-width:5}
+  circle.prog{fill:none;stroke:#7c9ec9;stroke-width:5;stroke-linecap:round;
+    stroke-dasharray:220;stroke-dashoffset:220;transition:stroke-dashoffset .1s linear}
+  .count{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:1.6rem;font-weight:700;color:#7c9ec9
+  }
+  .cancel{
+    background:transparent;border:1.5px solid #2a2a3a;color:#5a5a78;
+    padding:10px 28px;border-radius:20px;font-size:.9rem;font-family:inherit;cursor:pointer
+  }
+  .cancel:active{opacity:.6}
+  .status{font-size:1rem;text-align:center;min-height:1.4em}
+  .status.ok{color:#9ec99e}
+  .status.err{color:#c97c7c}
+</style>
+</head>
+<body>
+<div class="ico">🧷</div>
+<div class="label" id="label">Logging diaper in…</div>
+<div class="ts" id="ts"></div>
+
+<div class="ring-wrap" id="ring-wrap">
+  <svg viewBox="0 0 80 80" width="80" height="80">
+    <circle class="track" cx="40" cy="40" r="35"/>
+    <circle class="prog" id="prog" cx="40" cy="40" r="35"/>
+  </svg>
+  <div class="count" id="count">2</div>
+</div>
+
+<button class="cancel" id="cancel-btn" onclick="cancel()">Cancel</button>
+<div class="status" id="status"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
+
+const FB_CFG = {
+  apiKey:            "AIzaSyCOU92YRIHFdpNOEpv6LnRBJcYS_FMQr5A",
+  authDomain:        "baby-tracker-865b0.firebaseapp.com",
+  databaseURL:       "https://baby-tracker-865b0-default-rtdb.firebaseio.com",
+  projectId:         "baby-tracker-865b0",
+  storageBucket:     "baby-tracker-865b0.firebasestorage.app",
+  messagingSenderId: "114549808464",
+  appId:             "1:114549808464:web:457d0a917d813dc5ad6055"
+};
+
+const db = getDatabase(initializeApp(FB_CFG));
+function uid(){ return Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+document.getElementById('ts').textContent =
+  new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+
+const TOTAL = 2000, STEP = 100;
+const prog = document.getElementById('prog');
+const countEl = document.getElementById('count');
+const CIRC = 2 * Math.PI * 35;
+let elapsed = 0;
+let cancelled = false;
+
+const iv = setInterval(() => {
+  elapsed += STEP;
+  prog.style.strokeDashoffset = CIRC * (1 - elapsed / TOTAL);
+  const secs = Math.ceil((TOTAL - elapsed) / 1000);
+  countEl.textContent = secs > 0 ? secs : '';
+  if (elapsed >= TOTAL) { clearInterval(iv); if (!cancelled) doLog(); }
+}, STEP);
+
+window.cancel = () => {
+  cancelled = true;
+  clearInterval(iv);
+  document.getElementById('ring-wrap').style.display = 'none';
+  document.getElementById('cancel-btn').style.display = 'none';
+  document.getElementById('label').textContent = 'Cancelled';
+  document.getElementById('label').style.color = '#5a5a78';
+};
+
+async function doLog() {
+  document.getElementById('ring-wrap').style.display = 'none';
+  document.getElementById('cancel-btn').style.display = 'none';
+  document.getElementById('label').textContent = 'Saving…';
+
+  const now = Date.now();
+  let by = 'Mom';
+  try { by = JSON.parse(localStorage.getItem('bb_s')||'{}').lastUser || 'Mom'; } catch(e){}
+
+  const id = uid();
+  try {
+    await set(ref(db, `babyboston/entries/${id}`), {
+      id, type:'diaper', diaperTypes:[], notes:'', by, timestamp:now
+    });
+    document.getElementById('label').textContent = '✓ Diaper logged';
+    document.getElementById('label').style.color = '#9ec99e';
+    document.getElementById('ts').textContent =
+      new Date(now).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    setTimeout(()=>{
+      if(navigator.standalone || matchMedia('(display-mode:standalone)').matches) window.close();
+    }, 10000);
+  } catch(e){
+    document.getElementById('label').textContent = '✗ Failed — check connection';
+    document.getElementById('label').style.color = '#c97c7c';
+  }
+}
+</script>
+</body>
+</html>
